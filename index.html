@@ -1,0 +1,2483 @@
+<!DOCTYPE html>
+<html lang="id" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MPI DKV - Perangkat Lunak Desain (Fase F / XI SMK)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Plus Jakarta Sans & Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    colors: {
+                        navy: {
+                            900: '#0a0f24',
+                            800: '#111936',
+                            700: '#1b264f',
+                        },
+                        brand: {
+                            purple: '#7c3aed',
+                            cyan: '#06b6d4',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Animations */
+        @keyframes fadeInSlide {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .animate-page {
+            animation: fadeInSlide 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes floatSlow {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        .animate-float {
+            animation: floatSlow 4s ease-in-out infinite;
+        }
+
+        /* Pixelated effect for Bitmap Simulation */
+        .pixelated-canvas {
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+
+        /* Drag & Drop Styling */
+        .draggable-item {
+            cursor: grab;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .draggable-item:active {
+            cursor: grabbing;
+            transform: scale(0.98);
+        }
+        .drop-zone {
+            transition: all 0.25s ease;
+        }
+        .drop-zone.drag-over {
+            background-color: #ecfeff;
+            border-color: #06b6d4;
+            transform: scale(1.01);
+        }
+
+        /* Gradient Text */
+        .text-gradient {
+            background: linear-gradient(135deg, #06b6d4 0%, #8b5cf6 50%, #ec4899 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased selection:bg-cyan-500 selection:text-white overflow-x-hidden">
+
+    <!-- Toast Notification Container (Replaces alert()) -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- Mobile Header -->
+    <header class="lg:hidden sticky top-0 z-40 bg-navy-900 text-white px-4 py-3 flex items-center justify-between shadow-lg">
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-400 to-purple-600 flex items-center justify-center font-display font-bold text-lg shadow-md">
+                <i class="fa-solid fa-pen-nib"></i>
+            </div>
+            <div>
+                <h1 class="font-display font-bold text-sm leading-tight">MPI DKV • XI SMK</h1>
+                <p class="text-[11px] text-cyan-300">Perangkat Lunak Desain</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-3">
+            <div class="text-right">
+                <span class="text-[10px] text-slate-300 block">Progres</span>
+                <span id="mobile-progress-text" class="text-xs font-bold text-cyan-400">0%</span>
+            </div>
+            <button id="mobile-menu-btn" class="p-2 rounded-lg bg-navy-800 hover:bg-navy-700 text-cyan-400 focus:outline-none">
+                <i class="fa-solid fa-bars text-xl"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Mobile Sidebar Backdrop -->
+    <div id="sidebar-backdrop" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-40 hidden lg:hidden"></div>
+
+    <div class="flex min-h-screen">
+        <!-- Sidebar Navigation -->
+        <aside id="sidebar" class="fixed lg:sticky top-0 left-0 z-50 h-screen w-72 bg-navy-900 text-white flex flex-col justify-between transition-transform duration-300 -translate-x-full lg:translate-x-0 shadow-2xl border-r border-slate-800">
+            <!-- Brand & Logo -->
+            <div class="p-6 border-b border-slate-800/80">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-cyan-400 via-blue-500 to-purple-600 flex items-center justify-center text-white text-xl shadow-lg shadow-cyan-500/20">
+                            <i class="fa-solid fa-bezier-curve"></i>
+                        </div>
+                        <div>
+                            <span class="text-[11px] font-semibold uppercase tracking-wider text-cyan-400 block">Fase F • Kelas XI</span>
+                            <h2 class="font-display font-extrabold text-base tracking-tight">DKV STUDIO MPI</h2>
+                        </div>
+                    </div>
+                    <button id="close-sidebar-btn" class="lg:hidden text-slate-400 hover:text-white p-1">
+                        <i class="fa-solid fa-xmark text-xl"></i>
+                    </button>
+                </div>
+
+                <!-- Learning Progress Bar -->
+                <div class="mt-5 bg-navy-800/90 p-3.5 rounded-2xl border border-slate-700/60">
+                    <div class="flex justify-between items-center text-xs mb-1.5">
+                        <span class="text-slate-300 font-medium">Progres Belajar</span>
+                        <span id="sidebar-progress-text" class="font-bold text-cyan-400">0%</span>
+                    </div>
+                    <div class="w-full h-2.5 bg-navy-900 rounded-full overflow-hidden p-0.5">
+                        <div id="sidebar-progress-bar" class="h-full bg-gradient-to-r from-cyan-400 to-purple-500 rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                    <p id="progress-status-label" class="text-[10px] text-slate-400 mt-1.5">Eksplorasi semua menu untuk 100%</p>
+                </div>
+            </div>
+
+            <!-- Navigation Menu Items -->
+            <nav class="flex-1 overflow-y-auto px-4 py-4 space-y-1.5" id="main-nav">
+                <button data-target="home" class="nav-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-all bg-gradient-to-r from-cyan-500/20 to-purple-600/20 text-cyan-300 border border-cyan-500/30">
+                    <span class="flex items-center gap-3"><i class="fa-solid fa-house w-5 text-center"></i> 1. Beranda</span>
+                    <i class="fa-solid fa-circle-check text-xs text-emerald-400 nav-check" data-page="home"></i>
+                </button>
+                <button data-target="tujuan" class="nav-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-slate-300 hover:bg-navy-800 hover:text-white transition-all">
+                    <span class="flex items-center gap-3"><i class="fa-solid fa-bullseye w-5 text-center"></i> 2. Tujuan Pembelajaran</span>
+                    <i class="fa-regular fa-circle text-xs text-slate-600 nav-check" data-page="tujuan"></i>
+                </button>
+                <button data-target="materi" class="nav-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-slate-300 hover:bg-navy-800 hover:text-white transition-all">
+                    <span class="flex items-center gap-3"><i class="fa-solid fa-book-open w-5 text-center"></i> 3. Materi Pembelajaran</span>
+                    <i class="fa-regular fa-circle text-xs text-slate-600 nav-check" data-page="materi"></i>
+                </button>
+                <button data-target="simulasi" class="nav-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-slate-300 hover:bg-navy-800 hover:text-white transition-all">
+                    <span class="flex items-center gap-3"><i class="fa-solid fa-vr-cardboard w-5 text-center"></i> 4. Simulasi Interaktif</span>
+                    <i class="fa-regular fa-circle text-xs text-slate-600 nav-check" data-page="simulasi"></i>
+                </button>
+                <button data-target="latihan" class="nav-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-slate-300 hover:bg-navy-800 hover:text-white transition-all">
+                    <span class="flex items-center gap-3"><i class="fa-solid fa-pen-to-square w-5 text-center"></i> 5. Latihan Soal</span>
+                    <i class="fa-regular fa-circle text-xs text-slate-600 nav-check" data-page="latihan"></i>
+                </button>
+                <button data-target="evaluasi" class="nav-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-slate-300 hover:bg-navy-800 hover:text-white transition-all">
+                    <span class="flex items-center gap-3"><i class="fa-solid fa-award w-5 text-center"></i> 6. Evaluasi & Proyek</span>
+                    <i class="fa-regular fa-circle text-xs text-slate-600 nav-check" data-page="evaluasi"></i>
+                </button>
+            </nav>
+
+            <!-- Active Student Badge in Sidebar -->
+            <div class="px-4 pb-3">
+                <div id="sidebar-student-card" class="hidden bg-navy-800/80 border border-cyan-500/30 rounded-2xl p-3 text-xs">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="text-[10px] font-bold uppercase text-cyan-400">Peserta Didik Aktif</span>
+                        <button onclick="openStudentModal()" class="text-[10px] text-slate-400 hover:text-white underline">Ubah</button>
+                    </div>
+                    <p id="sidebar-student-name" class="font-bold text-white truncate">-</p>
+                    <p id="sidebar-student-class" class="text-[11px] text-slate-400 truncate">-</p>
+                </div>
+            </div>
+
+            <!-- Reset Progress Footer -->
+            <div class="p-4 border-t border-slate-800/80">
+                <button onclick="resetAllProgress()" class="w-full py-2 px-3 rounded-xl bg-slate-800/70 hover:bg-rose-950/60 text-slate-400 hover:text-rose-300 text-xs font-medium transition flex items-center justify-center gap-2 border border-slate-700/50">
+                    <i class="fa-solid fa-rotate-left"></i> Reset Progres Belajar
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 min-w-0 bg-slate-50">
+            <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-10 py-6 lg:py-10">
+
+                <!-- ==========================================
+                     1. HALAMAN PEMBUKA (HOME)
+                ========================================== -->
+                <section id="page-home" class="page-section animate-page">
+                    <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-navy-900 via-navy-800 to-indigo-950 text-white p-6 sm:p-10 lg:p-14 shadow-2xl border border-slate-800">
+                        <!-- Decorative Glow Orbs -->
+                        <div class="absolute -top-24 -right-24 w-80 h-80 bg-cyan-500/20 rounded-full blur-3xl pointer-events-none"></div>
+                        <div class="absolute -bottom-24 -left-24 w-80 h-80 bg-purple-600/25 rounded-full blur-3xl pointer-events-none"></div>
+
+                        <div class="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
+                            <!-- Left Text Content -->
+                            <div class="lg:col-span-7 space-y-5">
+                                <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-cyan-300 text-xs font-semibold tracking-wide">
+                                    <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+                                    CREATIVE DIGITAL LEARNING • KURIKULUM MERDEKA
+                                </div>
+
+                                <div>
+                                    <p class="text-sm sm:text-base font-bold tracking-widest text-purple-300 uppercase mb-1">
+                                        MULTIMEDIA PEMBELAJARAN INTERAKTIF
+                                    </p>
+                                    <h1 class="font-display text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-tight">
+                                        PERANGKAT LUNAK <span class="text-gradient">DESAIN</span>
+                                    </h1>
+                                </div>
+
+                                <p class="text-slate-300 text-sm sm:text-base leading-relaxed max-w-xl">
+                                    Eksplorasi dunia perangkat lunak industri kreatif mulai dari pengolah bitmap, ilustrasi vektor, tata letak publikasi, hingga desain UI/UX secara interaktif dan menyenangkan.
+                                </p>
+
+                                <!-- Metadata Badges -->
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                                    <div class="bg-white/5 border border-white/10 rounded-2xl p-3.5 backdrop-blur-sm">
+                                        <span class="text-[11px] text-cyan-300 uppercase font-semibold block">Mata Pelajaran</span>
+                                        <span class="text-sm font-bold text-white">Desain Komunikasi Visual</span>
+                                    </div>
+                                    <div class="bg-white/5 border border-white/10 rounded-2xl p-3.5 backdrop-blur-sm">
+                                        <span class="text-[11px] text-purple-300 uppercase font-semibold block">Fase / Kelas</span>
+                                        <span class="text-sm font-bold text-white">Fase F / XI SMK</span>
+                                    </div>
+                                    <div class="bg-white/5 border border-white/10 rounded-2xl p-3.5 backdrop-blur-sm">
+                                        <span class="text-[11px] text-emerald-300 uppercase font-semibold block">Jenjang</span>
+                                        <span class="text-sm font-bold text-white">Sekolah Menengah Kejuruan</span>
+                                    </div>
+                                </div>
+
+                                <!-- Guru Pengampu Card on Home Page -->
+                                <div class="bg-white/10 border border-white/15 rounded-2xl p-4 backdrop-blur-md flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                    <div class="flex items-center gap-3.5">
+                                        <div class="w-11 h-11 rounded-xl bg-gradient-to-tr from-cyan-400 to-purple-500 flex items-center justify-center text-navy-900 font-bold text-lg shrink-0 shadow">
+                                            <i class="fa-solid fa-chalkboard-user"></i>
+                                        </div>
+                                        <div>
+                                            <span class="text-[11px] text-cyan-300 font-semibold uppercase tracking-wider block">Guru Pengampu</span>
+                                            <h3 id="home-guru-nama" class="font-display font-bold text-white text-sm sm:text-base">Anang Susilo Utomo,S.T.,Gr</h3>
+                                            <p id="home-guru-sekolah" class="text-xs text-slate-300">SMK Negeri 1 Sorong • Desain Komunikasi Visual</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Identitas Peserta Didik Form on Home Page -->
+                                <div class="bg-white/10 border border-white/15 rounded-2xl p-4 backdrop-blur-md space-y-3">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-xs font-bold uppercase tracking-wider text-cyan-300 flex items-center gap-2">
+                                            <i class="fa-solid fa-id-card"></i> Identitas Peserta Didik
+                                        </span>
+                                        <span id="student-saved-badge" class="hidden text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-semibold">Tersimpan</span>
+                                    </div>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <input type="text" id="home-student-name" placeholder="Nama Lengkap Siswa *" class="w-full px-3.5 py-2.5 rounded-xl bg-navy-900/80 border border-white/15 text-white placeholder-slate-400 text-xs sm:text-sm focus:outline-none focus:border-cyan-400">
+                                        <input type="text" id="home-student-class" placeholder="Kelas / Jurusan (misal: XI DKV 1)" class="w-full px-3.5 py-2.5 rounded-xl bg-navy-900/80 border border-white/15 text-white placeholder-slate-400 text-xs sm:text-sm focus:outline-none focus:border-cyan-400">
+                                    </div>
+                                </div>
+
+                                <!-- CTA Buttons -->
+                                <div class="pt-2 flex flex-wrap items-center gap-4">
+                                    <button type="button" onclick="startLearningWithStudent()" class="px-7 py-4 rounded-2xl bg-gradient-to-r from-cyan-500 via-blue-600 to-purple-600 hover:from-cyan-400 hover:to-purple-500 text-white font-display font-bold text-sm sm:text-base shadow-lg shadow-cyan-500/30 hover:shadow-cyan-400/50 transition-all transform hover:-translate-y-0.5 flex items-center gap-3 cursor-pointer">
+                                        <span>MULAI BELAJAR</span>
+                                        <i class="fa-solid fa-arrow-right"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Right Custom SVG Illustration: SMK DKV Student Working on Design Computer -->
+                            <div class="lg:col-span-5 flex justify-center">
+                                <div class="relative w-full max-w-md animate-float">
+                                    <svg viewBox="0 0 420 380" class="w-full h-auto drop-shadow-2xl" xmlns="http://www.w3.org/2000/svg">
+                                        <defs>
+                                            <linearGradient id="bgCircle" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                <stop offset="0%" stop-color="#06b6d4" stop-opacity="0.25"/>
+                                                <stop offset="100%" stop-color="#8b5cf6" stop-opacity="0.35"/>
+                                            </linearGradient>
+                                            <linearGradient id="screenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                <stop offset="0%" stop-color="#1e1b4b"/>
+                                                <stop offset="100%" stop-color="#0f172a"/>
+                                            </linearGradient>
+                                            <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                <stop offset="0%" stop-color="#22d3ee"/>
+                                                <stop offset="100%" stop-color="#a855f7"/>
+                                            </linearGradient>
+                                        </defs>
+                                        <!-- Background Studio Aura -->
+                                        <circle cx="210" cy="195" r="165" fill="url(#bgCircle)"/>
+                                        <circle cx="210" cy="195" r="130" fill="none" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="6 6" opacity="0.5"/>
+
+                                        <!-- Floating Design Software Badges -->
+                                        <g transform="translate(35, 55)">
+                                            <rect width="48" height="48" rx="12" fill="#001e36" stroke="#31a8ff" stroke-width="2"/>
+                                            <text x="24" y="31" text-anchor="middle" fill="#31a8ff" font-family="sans-serif" font-weight="bold" font-size="18">Ps</text>
+                                        </g>
+                                        <g transform="translate(335, 45)">
+                                            <rect width="48" height="48" rx="12" fill="#330000" stroke="#ff9a00" stroke-width="2"/>
+                                            <text x="24" y="31" text-anchor="middle" fill="#ff9a00" font-family="sans-serif" font-weight="bold" font-size="18">Ai</text>
+                                        </g>
+                                        <g transform="translate(345, 165)">
+                                            <rect width="44" height="44" rx="12" fill="#064e3b" stroke="#34d399" stroke-width="2"/>
+                                            <text x="22" y="28" text-anchor="middle" fill="#34d399" font-family="sans-serif" font-weight="bold" font-size="15">Cdr</text>
+                                        </g>
+                                        <g transform="translate(25, 175)">
+                                            <rect width="44" height="44" rx="12" fill="#1e1b4b" stroke="#c084fc" stroke-width="2"/>
+                                            <circle cx="22" cy="22" r="9" fill="none" stroke="#c084fc" stroke-width="2.5"/>
+                                            <path d="M15 29 L29 15" stroke="#22d3ee" stroke-width="2.5"/>
+                                        </g>
+
+                                        <!-- Desk -->
+                                        <rect x="45" y="295" width="330" height="14" rx="7" fill="#334155"/>
+                                        <rect x="75" y="309" width="14" height="55" rx="4" fill="#1e293b"/>
+                                        <rect x="330" y="309" width="14" height="55" rx="4" fill="#1e293b"/>
+
+                                        <!-- Desktop Monitor -->
+                                        <rect x="175" y="255" width="70" height="40" fill="#475569"/>
+                                        <rect x="155" y="288" width="110" height="8" rx="4" fill="#64748b"/>
+                                        <rect x="95" y="105" width="230" height="152" rx="14" fill="#0f172a" stroke="#475569" stroke-width="4"/>
+                                        <rect x="105" y="115" width="210" height="126" rx="8" fill="url(#screenGrad)"/>
+
+                                        <!-- Design Interface on Screen -->
+                                        <!-- Top menu bar -->
+                                        <rect x="105" y="115" width="210" height="14" rx="4" fill="#1e293b"/>
+                                        <circle cx="115" cy="122" r="3" fill="#f43f5e"/>
+                                        <circle cx="124" cy="122" r="3" fill="#eab308"/>
+                                        <circle cx="133" cy="122" r="3" fill="#22c55e"/>
+                                        <!-- Left toolbox -->
+                                        <rect x="110" y="134" width="18" height="100" rx="4" fill="#1e293b"/>
+                                        <rect x="114" y="140" width="10" height="10" rx="2" fill="#22d3ee"/>
+                                        <circle cx="119" cy="162" r="5" fill="#a855f7"/>
+                                        <polygon points="119,175 114,185 124,185" fill="#f472b6"/>
+                                        <!-- Artboard & Bezier Curve -->
+                                        <rect x="136" y="138" width="130" height="92" rx="4" fill="#ffffff"/>
+                                        <path d="M150 205 C 165 150, 225 150, 245 200" fill="none" stroke="url(#accentGrad)" stroke-width="4" stroke-linecap="round"/>
+                                        <circle cx="150" cy="205" r="4" fill="#06b6d4"/>
+                                        <circle cx="245" cy="200" r="4" fill="#a855f7"/>
+                                        <line x1="150" y1="205" x2="165" y2="150" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="3 2"/>
+                                        <rect x="162" y="147" width="6" height="6" fill="#06b6d4"/>
+                                        <!-- Right Layers Panel -->
+                                        <rect x="272" y="134" width="38" height="100" rx="4" fill="#1e293b"/>
+                                        <rect x="276" y="142" width="30" height="8" rx="2" fill="#38bdf8" opacity="0.8"/>
+                                        <rect x="276" y="155" width="30" height="8" rx="2" fill="#818cf8" opacity="0.6"/>
+                                        <rect x="276" y="168" width="30" height="8" rx="2" fill="#c084fc" opacity="0.6"/>
+
+                                        <!-- Pen Tablet & Stylus on Desk -->
+                                        <rect x="265" y="283" width="68" height="12" rx="4" fill="#1e293b" stroke="#38bdf8" stroke-width="1.5"/>
+                                        <line x1="280" y1="280" x2="315" y2="272" stroke="#22d3ee" stroke-width="3" stroke-linecap="round"/>
+
+                                        <!-- SMK Student Character (Back/Side Creative Silhouette) -->
+                                        <!-- Chair Back -->
+                                        <rect x="165" y="235" width="85" height="60" rx="14" fill="#1e293b" stroke="#334155" stroke-width="2"/>
+                                        <!-- Student Torso (SMK Creative Vest/Uniform) -->
+                                        <path d="M168 295 C168 245, 245 245, 245 295 Z" fill="#2563eb"/>
+                                        <path d="M188 252 L206 275 L224 252" fill="#ffffff"/>
+                                        <!-- Student Head & Headphones -->
+                                        <circle cx="206" cy="215" r="24" fill="#fed7aa"/>
+                                        <!-- Hair -->
+                                        <path d="M182 212 C182 185, 232 185, 230 214 C225 198, 190 198, 182 212 Z" fill="#0f172a"/>
+                                        <!-- Creative Headphones -->
+                                        <path d="M180 215 C180 182, 232 182, 232 215" fill="none" stroke="#22d3ee" stroke-width="5" stroke-linecap="round"/>
+                                        <rect x="175" y="206" width="9" height="18" rx="4" fill="#a855f7"/>
+                                        <rect x="228" y="206" width="9" height="18" rx="4" fill="#a855f7"/>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Feature Highlights -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
+                        <div onclick="navigateTo('materi')" class="cursor-pointer group bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md hover:border-cyan-400 transition">
+                            <div class="w-11 h-11 rounded-xl bg-cyan-50 text-cyan-600 flex items-center justify-center text-lg mb-3 group-hover:scale-110 transition">
+                                <i class="fa-solid fa-layer-group"></i>
+                            </div>
+                            <h3 class="font-display font-bold text-slate-800 text-base">5 Bab Materi Visual</h3>
+                            <p class="text-xs text-slate-500 mt-1">Bitmap vs vektor, jenis software, antarmuka, dan proyek DKV.</p>
+                        </div>
+
+                        <div onclick="navigateTo('simulasi')" class="cursor-pointer group bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md hover:border-purple-400 transition">
+                            <div class="w-11 h-11 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-lg mb-3 group-hover:scale-110 transition">
+                                <i class="fa-solid fa-magnifying-glass-plus"></i>
+                            </div>
+                            <h3 class="font-display font-bold text-slate-800 text-base">4 Simulasi Interaktif</h3>
+                            <p class="text-xs text-slate-500 mt-1">Zoom pixel vs vektor, tebak software, drag & drop, & studi kasus.</p>
+                        </div>
+
+                        <div onclick="navigateTo('latihan')" class="cursor-pointer group bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md hover:border-blue-400 transition">
+                            <div class="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-lg mb-3 group-hover:scale-110 transition">
+                                <i class="fa-solid fa-list-check"></i>
+                            </div>
+                            <h3 class="font-display font-bold text-slate-800 text-base">10 Latihan + Pembahasan</h3>
+                            <p class="text-xs text-slate-500 mt-1">Uji pemahamanmu langsung dengan umpan balik instan setiap nomor.</p>
+                        </div>
+
+                        <div onclick="navigateTo('evaluasi')" class="cursor-pointer group bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md hover:border-emerald-400 transition">
+                            <div class="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg mb-3 group-hover:scale-110 transition">
+                                <i class="fa-solid fa-trophy"></i>
+                            </div>
+                            <h3 class="font-display font-bold text-slate-800 text-base">Evaluasi & Proyek Praktik</h3>
+                            <p class="text-xs text-slate-500 mt-1">15 soal evaluasi akhir skor 0–100 & tugas poster produk lokal.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ==========================================
+                     2. TUJUAN PEMBELAJARAN
+                ========================================== -->
+                <section id="page-tujuan" class="page-section hidden animate-page">
+                    <div class="mb-6">
+                        <span class="text-xs font-bold uppercase tracking-wider text-cyan-600 bg-cyan-50 px-3 py-1 rounded-full">Capaian Pembelajaran Fase F</span>
+                        <h2 class="font-display text-2xl sm:text-3xl font-extrabold text-navy-900 mt-2">Tujuan Pembelajaran</h2>
+                        <p class="text-slate-600 text-sm sm:text-base mt-1">Setelah mempelajari modul interaktif ini, peserta didik kelas XI SMK jurusan Desain Komunikasi Visual diharapkan mampu:</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- 7 Tujuan Pembelajaran Cards -->
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-start gap-4 hover:border-cyan-400 transition">
+                            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-navy-800 to-cyan-600 text-white font-display font-bold flex items-center justify-center shrink-0">1</div>
+                            <div>
+                                <h3 class="font-bold text-slate-800 text-base">Memahami Pengertian Perangkat Lunak Desain</h3>
+                                <p class="text-xs sm:text-sm text-slate-500 mt-1">Menjelaskan konsep dasar software grafis serta perannya dalam mendukung alur kerja industri kreatif modern.</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-start gap-4 hover:border-purple-400 transition">
+                            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-700 to-indigo-600 text-white font-display font-bold flex items-center justify-center shrink-0">2</div>
+                            <div>
+                                <h3 class="font-bold text-slate-800 text-base">Mengidentifikasi Jenis & Fungsi Perangkat Lunak Desain</h3>
+                                <p class="text-xs sm:text-sm text-slate-500 mt-1">Mengenal ragam aplikasi populer seperti Photoshop, Illustrator, CorelDRAW, InDesign, Figma, dan Canva.</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-start gap-4 hover:border-cyan-400 transition">
+                            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-600 to-blue-600 text-white font-display font-bold flex items-center justify-center shrink-0">3</div>
+                            <div>
+                                <h3 class="font-bold text-slate-800 text-base">Membedakan Perangkat Lunak Bitmap dan Vektor</h3>
+                                <p class="text-xs sm:text-sm text-slate-500 mt-1">Menganalisis perbedaan grafis berbasis piksel (raster) dan titik koordinat matematis (vektor) beserta format filenya.</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-start gap-4 hover:border-purple-400 transition">
+                            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 to-purple-600 text-white font-display font-bold flex items-center justify-center shrink-0">4</div>
+                            <div>
+                                <h3 class="font-bold text-slate-800 text-base">Memahami Karakteristik Perangkat Lunak Desain Grafis</h3>
+                                <p class="text-xs sm:text-sm text-slate-500 mt-1">Mengevaluasi kelebihan, kekurangan, serta standar output cetak (CMYK) maupun layar digital (RGB) tiap aplikasi.</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-start gap-4 hover:border-cyan-400 transition">
+                            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-cyan-500 text-white font-display font-bold flex items-center justify-center shrink-0">5</div>
+                            <div>
+                                <h3 class="font-bold text-slate-800 text-base">Mengidentifikasi Fitur Dasar Aplikasi Desain</h3>
+                                <p class="text-xs sm:text-sm text-slate-500 mt-1">Mengenali area kerja (workspace) meliputi menu bar, toolbox, canvas/artboard, panel warna, properties, dan layer.</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-start gap-4 hover:border-purple-400 transition">
+                            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-pink-600 text-white font-display font-bold flex items-center justify-center shrink-0">6</div>
+                            <div>
+                                <h3 class="font-bold text-slate-800 text-base">Memilih Perangkat Lunak Sesuai Kebutuhan Proyek DKV</h3>
+                                <p class="text-xs sm:text-sm text-slate-500 mt-1">Menentukan software paling efektif untuk pembuatan logo, poster, kemasan, majalah, konten medsos, hingga UI aplikasi.</p>
+                            </div>
+                        </div>
+
+                        <div class="md:col-span-2 bg-gradient-to-r from-navy-900 to-indigo-950 text-white p-5 sm:p-6 rounded-2xl shadow-md flex items-start gap-4">
+                            <div class="w-10 h-10 rounded-xl bg-cyan-400 text-navy-900 font-display font-extrabold flex items-center justify-center shrink-0">7</div>
+                            <div>
+                                <h3 class="font-bold text-cyan-300 text-base">Menerapkan Penggunaan Perangkat Lunak dalam Karya Visual Sederhana</h3>
+                                <p class="text-xs sm:text-sm text-slate-300 mt-1">Merancang karya desain komunikasi visual (poster promosi produk lokal) dengan menerapkan prinsip tata letak dan ekspor file yang tepat.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-8 flex justify-end">
+                        <button onclick="navigateTo('materi')" class="px-6 py-3 rounded-xl bg-navy-900 hover:bg-navy-800 text-white font-semibold text-sm flex items-center gap-2 shadow transition">
+                            <span>Lanjut ke Materi Pembelajaran</span>
+                            <i class="fa-solid fa-arrow-right text-cyan-400"></i>
+                        </button>
+                    </div>
+                </section>
+
+                <!-- ==========================================
+                     3. MATERI PEMBELAJARAN (5 BAB INTERAKTIF)
+                ========================================== -->
+                <section id="page-materi" class="page-section hidden animate-page">
+                    <div class="mb-6">
+                        <span class="text-xs font-bold uppercase tracking-wider text-purple-600 bg-purple-50 px-3 py-1 rounded-full">Modul Inti DKV</span>
+                        <h2 class="font-display text-2xl sm:text-3xl font-extrabold text-navy-900 mt-2">Materi Pembelajaran</h2>
+                        <p class="text-slate-600 text-sm mt-1">Pilih tab bab di bawah ini untuk mempelajari materi secara bertahap dan interaktif.</p>
+                    </div>
+
+                    <!-- Chapter Tabs Navigation -->
+                    <div class="flex overflow-x-auto gap-2 pb-3 mb-6 no-scrollbar" id="bab-tabs">
+                        <button onclick="switchBab(1)" data-bab="1" class="bab-tab-btn shrink-0 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-navy-900 text-white shadow transition">
+                            BAB 1: Pengenalan
+                        </button>
+                        <button onclick="switchBab(2)" data-bab="2" class="bab-tab-btn shrink-0 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-white text-slate-600 border border-slate-200 hover:bg-slate-100 transition">
+                            BAB 2: Jenis Software
+                        </button>
+                        <button onclick="switchBab(3)" data-bab="3" class="bab-tab-btn shrink-0 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-white text-slate-600 border border-slate-200 hover:bg-slate-100 transition">
+                            BAB 3: Bitmap & Vektor
+                        </button>
+                        <button onclick="switchBab(4)" data-bab="4" class="bab-tab-btn shrink-0 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-white text-slate-600 border border-slate-200 hover:bg-slate-100 transition">
+                            BAB 4: Antarmuka Aplikasi
+                        </button>
+                        <button onclick="switchBab(5)" data-bab="5" class="bab-tab-btn shrink-0 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-white text-slate-600 border border-slate-200 hover:bg-slate-100 transition">
+                            BAB 5: Penerapan Proyek
+                        </button>
+                    </div>
+
+                    <!-- BAB 1 CONTENT -->
+                    <div id="bab-content-1" class="bab-panel space-y-6">
+                        <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm">
+                            <div class="flex items-center gap-3 mb-4">
+                                <span class="px-3 py-1 rounded-lg bg-cyan-100 text-cyan-800 font-bold text-xs">BAB 1</span>
+                                <h3 class="font-display text-xl sm:text-2xl font-bold text-navy-900">Pengenalan Perangkat Lunak Desain</h3>
+                            </div>
+
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-center">
+                                <div class="space-y-4 text-sm sm:text-base text-slate-600 leading-relaxed">
+                                    <div class="p-4 rounded-2xl bg-slate-50 border-l-4 border-cyan-500">
+                                        <h4 class="font-bold text-navy-900 mb-1">Apa itu Perangkat Lunak Desain?</h4>
+                                        <p class="text-sm">Perangkat lunak desain (<em>design software</em>) adalah program komputer yang dirancang khusus untuk membantu desainer menciptakan, memanipulasi, mengatur tata letak, dan memproduksi elemen visual digital maupun cetak.</p>
+                                    </div>
+                                    <p>Dalam dunia <strong>Desain Komunikasi Visual (DKV)</strong>, software desain merupakan "kanvas dan kotak peralatan digital" utama untuk menerjemahkan ide kreatif menjadi pesan visual yang komunikatif dan bernilai estetis.</p>
+                                </div>
+
+                                <div class="bg-gradient-to-br from-navy-900 to-indigo-950 text-white p-6 rounded-2xl space-y-3">
+                                    <h4 class="font-display font-bold text-cyan-300 flex items-center gap-2">
+                                        <i class="fa-solid fa-briefcase"></i> Fungsi dalam Industri Kreatif
+                                    </h4>
+                                    <ul class="space-y-2.5 text-xs sm:text-sm text-slate-200">
+                                        <li class="flex items-start gap-2.5"><i class="fa-solid fa-check-circle text-cyan-400 mt-1"></i> <span><strong>Efisiensi Produksi:</strong> Mempercepat proses pembuatan ilustrasi, revisi warna, hingga persiapan cetak massal.</span></li>
+                                        <li class="flex items-start gap-2.5"><i class="fa-solid fa-check-circle text-cyan-400 mt-1"></i> <span><strong>Presisi Tinggi:</strong> Mengatur ukuran milimeter hingga piksel secara akurat untuk kebutuhan branding & kemasan.</span></li>
+                                        <li class="flex items-start gap-2.5"><i class="fa-solid fa-check-circle text-cyan-400 mt-1"></i> <span><strong>Kolaborasi Digital:</strong> Memungkinkan tim kreatif berbagi aset desain lintas perangkat dan cloud.</span></li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <!-- Contoh Penerapan Sehari-hari -->
+                            <div class="mt-8">
+                                <h4 class="font-display font-bold text-navy-900 text-base mb-4">Contoh Penerapan dalam Kehidupan Sehari-hari</h4>
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                                    <div class="p-4 rounded-2xl bg-cyan-50/70 border border-cyan-100 text-center">
+                                        <i class="fa-solid fa-box-open text-2xl text-cyan-600 mb-2"></i>
+                                        <h5 class="font-bold text-xs sm:text-sm text-navy-900">Kemasan Makanan</h5>
+                                        <p class="text-[11px] text-slate-500 mt-1">Label kopi lokal, keripik, & minuman kekinian.</p>
+                                    </div>
+                                    <div class="p-4 rounded-2xl bg-purple-50/70 border border-purple-100 text-center">
+                                        <i class="fa-solid fa-mobile-screen-button text-2xl text-purple-600 mb-2"></i>
+                                        <h5 class="font-bold text-xs sm:text-sm text-navy-900">Antarmuka Aplikasi</h5>
+                                        <p class="text-[11px] text-slate-500 mt-1">Tampilan aplikasi ojek online & e-commerce.</p>
+                                    </div>
+                                    <div class="p-4 rounded-2xl bg-blue-50/70 border border-blue-100 text-center">
+                                        <i class="fa-solid fa-hashtag text-2xl text-blue-600 mb-2"></i>
+                                        <h5 class="font-bold text-xs sm:text-sm text-navy-900">Konten Media Sosial</h5>
+                                        <p class="text-[11px] text-slate-500 mt-1">Feed Instagram, thumbnail YouTube, & banner promo.</p>
+                                    </div>
+                                    <div class="p-4 rounded-2xl bg-amber-50/70 border border-amber-100 text-center">
+                                        <i class="fa-solid fa-signs-post text-2xl text-amber-600 mb-2"></i>
+                                        <h5 class="font-bold text-xs sm:text-sm text-navy-900">Media Promosi Cetak</h5>
+                                        <p class="text-[11px] text-slate-500 mt-1">Baliho jalan raya, brosur event, & majalah.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- BAB 2 CONTENT -->
+                    <div id="bab-content-2" class="bab-panel hidden space-y-6">
+                        <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm">
+                            <div class="flex items-center gap-3 mb-2">
+                                <span class="px-3 py-1 rounded-lg bg-purple-100 text-purple-800 font-bold text-xs">BAB 2</span>
+                                <h3 class="font-display text-xl sm:text-2xl font-bold text-navy-900">Jenis Perangkat Lunak Desain</h3>
+                            </div>
+                            <p class="text-sm text-slate-600 mb-6">Kenali 6 perangkat lunak desain paling populer yang wajib dikuasai siswa SMK jurusan DKV:</p>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                                <!-- 1. Adobe Photoshop -->
+                                <div class="rounded-2xl border border-slate-200 overflow-hidden hover:shadow-lg transition bg-white flex flex-col">
+                                    <div class="bg-[#001e36] p-4 flex items-center gap-3.5">
+                                        <div class="w-12 h-12 rounded-xl bg-[#001e36] border-2 border-[#31a8ff] flex items-center justify-center text-[#31a8ff] font-display font-extrabold text-xl shadow">Ps</div>
+                                        <div>
+                                            <h4 class="font-bold text-white text-base">Adobe Photoshop</h4>
+                                            <span class="text-xs text-[#31a8ff] font-medium">Pengolah Gambar Bitmap / Foto</span>
+                                        </div>
+                                    </div>
+                                    <div class="p-5 flex-1 flex flex-col justify-between space-y-3 text-xs sm:text-sm">
+                                        <p class="text-slate-600">Standar industri untuk manipulasi foto, retouching wajah, digital painting, dan komposisi gambar berbasis piksel.</p>
+                                        <div class="bg-slate-50 p-3 rounded-xl space-y-1">
+                                            <p class="font-bold text-navy-900 text-xs">Kelebihan Utama:</p>
+                                            <p class="text-xs text-slate-600">Sistem layer & masking super lengkap, dukungan AI Generative Fill, serta koreksi warna profesional.</p>
+                                        </div>
+                                        <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                                            <span class="font-semibold text-slate-500">Contoh Karya:</span>
+                                            <span class="px-2.5 py-1 rounded-full bg-sky-50 text-sky-700 font-semibold">Poster Manipulasi & Retouch Foto</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 2. Adobe Illustrator -->
+                                <div class="rounded-2xl border border-slate-200 overflow-hidden hover:shadow-lg transition bg-white flex flex-col">
+                                    <div class="bg-[#330000] p-4 flex items-center gap-3.5">
+                                        <div class="w-12 h-12 rounded-xl bg-[#330000] border-2 border-[#ff9a00] flex items-center justify-center text-[#ff9a00] font-display font-extrabold text-xl shadow">Ai</div>
+                                        <div>
+                                            <h4 class="font-bold text-white text-base">Adobe Illustrator</h4>
+                                            <span class="text-xs text-[#ff9a00] font-medium">Desain Grafis Berbasis Vektor</span>
+                                        </div>
+                                    </div>
+                                    <div class="p-5 flex-1 flex flex-col justify-between space-y-3 text-xs sm:text-sm">
+                                        <p class="text-slate-600">Aplikasi vektor unggulan untuk membuat ilustrasi digital, ikon, tipografi kustom, dan identitas merek yang tajam di segala ukuran.</p>
+                                        <div class="bg-slate-50 p-3 rounded-xl space-y-1">
+                                            <p class="font-bold text-navy-900 text-xs">Kelebihan Utama:</p>
+                                            <p class="text-xs text-slate-600">Pen Tool & Pathfinder presisi tinggi, dukungan multi-artboard, dan terintegrasi mulus dengan ekosistem Adobe.</p>
+                                        </div>
+                                        <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                                            <span class="font-semibold text-slate-500">Contoh Karya:</span>
+                                            <span class="px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 font-semibold">Logo Brand, Maskot & Flat Vector</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 3. CorelDRAW -->
+                                <div class="rounded-2xl border border-slate-200 overflow-hidden hover:shadow-lg transition bg-white flex flex-col">
+                                    <div class="bg-[#064e3b] p-4 flex items-center gap-3.5">
+                                        <div class="w-12 h-12 rounded-xl bg-[#064e3b] border-2 border-[#34d399] flex items-center justify-center text-[#34d399] font-display font-extrabold text-lg shadow">Cdr</div>
+                                        <div>
+                                            <h4 class="font-bold text-white text-base">CorelDRAW</h4>
+                                            <span class="text-xs text-[#34d399] font-medium">Desain Vektor & Percetakan</span>
+                                        </div>
+                                    </div>
+                                    <div class="p-5 flex-1 flex flex-col justify-between space-y-3 text-xs sm:text-sm">
+                                        <p class="text-slate-600">Software vektor yang sangat populer di industri percetakan Indonesia untuk spanduk, kemasan, undangan, dan vektor teknis.</p>
+                                        <div class="bg-slate-50 p-3 rounded-xl space-y-1">
+                                            <p class="font-bold text-navy-900 text-xs">Kelebihan Utama:</p>
+                                            <p class="text-xs text-slate-600">Pengaturan ukuran bidang cetak besar yang mudah, manajemen kurva intuitif, serta ramah bagi pemula.</p>
+                                        </div>
+                                        <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                                            <span class="font-semibold text-slate-500">Contoh Karya:</span>
+                                            <span class="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 font-semibold">Banner, Brosur & Pola Kemasan</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 4. Adobe InDesign -->
+                                <div class="rounded-2xl border border-slate-200 overflow-hidden hover:shadow-lg transition bg-white flex flex-col">
+                                    <div class="bg-[#49021f] p-4 flex items-center gap-3.5">
+                                        <div class="w-12 h-12 rounded-xl bg-[#49021f] border-2 border-[#ff3366] flex items-center justify-center text-[#ff3366] font-display font-extrabold text-xl shadow">Id</div>
+                                        <div>
+                                            <h4 class="font-bold text-white text-base">Adobe InDesign</h4>
+                                            <span class="text-xs text-[#ff3366] font-medium">Tata Letak & Publikasi</span>
+                                        </div>
+                                    </div>
+                                    <div class="p-5 flex-1 flex flex-col justify-between space-y-3 text-xs sm:text-sm">
+                                        <p class="text-slate-600">Perangkat lunak khusus layout halaman majalah, buku pelajaran, katalog produk, surat kabar, dan e-book interaktif.</p>
+                                        <div class="bg-slate-50 p-3 rounded-xl space-y-1">
+                                            <p class="font-bold text-navy-900 text-xs">Kelebihan Utama:</p>
+                                            <p class="text-xs text-slate-600">Fitur Master Pages, penomoran halaman otomatis, serta kontrol tipografi paragraf ratusan halaman.</p>
+                                        </div>
+                                        <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                                            <span class="font-semibold text-slate-500">Contoh Karya:</span>
+                                            <span class="px-2.5 py-1 rounded-full bg-rose-50 text-rose-700 font-semibold">Majalah, Buku & Katalog</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 5. Figma -->
+                                <div class="rounded-2xl border border-slate-200 overflow-hidden hover:shadow-lg transition bg-white flex flex-col">
+                                    <div class="bg-[#1e1b4b] p-4 flex items-center gap-3.5">
+                                        <div class="w-12 h-12 rounded-xl bg-[#1e1b4b] border-2 border-[#a855f7] flex items-center justify-center text-[#c084fc] font-display font-extrabold text-xl shadow">
+                                            <i class="fa-brands fa-figma"></i>
+                                        </div>
+                                        <div>
+                                            <h4 class="font-bold text-white text-base">Figma</h4>
+                                            <span class="text-xs text-[#c084fc] font-medium">Desain Antarmuka UI/UX</span>
+                                        </div>
+                                    </div>
+                                    <div class="p-5 flex-1 flex flex-col justify-between space-y-3 text-xs sm:text-sm">
+                                        <p class="text-slate-600">Aplikasi desain berbasis cloud untuk merancang wireframe, tampilan antarmuka website/aplikasi mobile, dan prototipe interaktif.</p>
+                                        <div class="bg-slate-50 p-3 rounded-xl space-y-1">
+                                            <p class="font-bold text-navy-900 text-xs">Kelebihan Utama:</p>
+                                            <p class="text-xs text-slate-600">Kolaborasi real-time multi-user, fitur Auto Layout, Design System, dan simulasi klik prototipe.</p>
+                                        </div>
+                                        <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                                            <span class="font-semibold text-slate-500">Contoh Karya:</span>
+                                            <span class="px-2.5 py-1 rounded-full bg-purple-50 text-purple-700 font-semibold">UI Aplikasi Mobile & Web</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 6. Canva -->
+                                <div class="rounded-2xl border border-slate-200 overflow-hidden hover:shadow-lg transition bg-white flex flex-col">
+                                    <div class="bg-gradient-to-r from-[#00c4cc] to-[#7d2ae8] p-4 flex items-center gap-3.5">
+                                        <div class="w-12 h-12 rounded-xl bg-white/20 backdrop-blur border-2 border-white flex items-center justify-center text-white font-display font-extrabold text-xl shadow">C</div>
+                                        <div>
+                                            <h4 class="font-bold text-white text-base">Canva</h4>
+                                            <span class="text-xs text-cyan-100 font-medium">Desain Grafis Berbasis Template</span>
+                                        </div>
+                                    </div>
+                                    <div class="p-5 flex-1 flex flex-col justify-between space-y-3 text-xs sm:text-sm">
+                                        <p class="text-slate-600">Platform desain grafis online praktis dengan ribuan template siap pakai untuk kebutuhan konten digital dan presentasi cepat.</p>
+                                        <div class="bg-slate-50 p-3 rounded-xl space-y-1">
+                                            <p class="font-bold text-navy-900 text-xs">Kelebihan Utama:</p>
+                                            <p class="text-xs text-slate-600">Mudah digunakan di browser maupun HP, pustaka elemen & font melimpah, dan proses desain sangat cepat.</p>
+                                        </div>
+                                        <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                                            <span class="font-semibold text-slate-500">Contoh Karya:</span>
+                                            <span class="px-2.5 py-1 rounded-full bg-cyan-50 text-cyan-700 font-semibold">Konten Medsos & Presentasi</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- BAB 3 CONTENT -->
+                    <div id="bab-content-3" class="bab-panel hidden space-y-6">
+                        <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm">
+                            <div class="flex items-center gap-3 mb-4">
+                                <span class="px-3 py-1 rounded-lg bg-cyan-100 text-cyan-800 font-bold text-xs">BAB 3</span>
+                                <h3 class="font-display text-xl sm:text-2xl font-bold text-navy-900">Desain Bitmap (Raster) dan Vektor</h3>
+                            </div>
+
+                            <!-- Comparison Table -->
+                            <div class="overflow-x-auto rounded-2xl border border-slate-200 mb-6">
+                                <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                                    <thead>
+                                        <tr class="bg-navy-900 text-white">
+                                            <th class="p-4 font-display">Aspek Pembanding</th>
+                                            <th class="p-4 font-display text-cyan-300">Grafis Bitmap (Raster)</th>
+                                            <th class="p-4 font-display text-purple-300">Grafis Vektor</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-200 bg-white">
+                                        <tr>
+                                            <td class="p-4 font-bold text-slate-800">Pengertian</td>
+                                            <td class="p-4 text-slate-600">Gambar yang tersusun dari ribuan titik-titik kecil berwarna yang disebut <strong>piksel (pixel)</strong> dalam grid.</td>
+                                            <td class="p-4 text-slate-600">Gambar yang terbentuk dari <strong>rumus matematis</strong> berupa titik koordinat (anchor point), garis, dan kurva (bezier).</td>
+                                        </tr>
+                                        <tr class="bg-slate-50/70">
+                                            <td class="p-4 font-bold text-slate-800">Saat Diperbesar (Zoom)</td>
+                                            <td class="p-4 text-rose-600 font-medium">Akan tampak kotak-kotak (pecah / <em>pixelated</em>) jika melebihi resolusi aslinya.</td>
+                                            <td class="p-4 text-emerald-600 font-medium">Tetap tajam, halus, dan tidak pecah meskipun diperbesar hingga ukuran baliho.</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="p-4 font-bold text-slate-800">Kelebihan</td>
+                                            <td class="p-4 text-slate-600">Mampu menampilkan gradasi warna realistis dan detail kompleks seperti foto alami.</td>
+                                            <td class="p-4 text-slate-600">Ukuran file relatif ringan, skalabilitas tak terbatas, mudah diubah warna & bentuknya.</td>
+                                        </tr>
+                                        <tr class="bg-slate-50/70">
+                                            <td class="p-4 font-bold text-slate-800">Kekurangan</td>
+                                            <td class="p-4 text-slate-600">Ukuran file besar pada resolusi tinggi (300 DPI) dan kualitas turun jika diperbesar paksa.</td>
+                                            <td class="p-4 text-slate-600">Kurang cocok untuk menghasilkan efek fotorealistik dengan detail tekstur alami yang rumit.</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="p-4 font-bold text-slate-800">Format File Populer</td>
+                                            <td class="p-4">
+                                                <span class="inline-block px-2.5 py-1 rounded-md bg-sky-100 text-sky-800 font-bold text-xs mr-1">JPG/JPEG</span>
+                                                <span class="inline-block px-2.5 py-1 rounded-md bg-sky-100 text-sky-800 font-bold text-xs mr-1">PNG</span>
+                                                <span class="inline-block px-2.5 py-1 rounded-md bg-sky-100 text-sky-800 font-bold text-xs">PSD</span>
+                                            </td>
+                                            <td class="p-4">
+                                                <span class="inline-block px-2.5 py-1 rounded-md bg-purple-100 text-purple-800 font-bold text-xs mr-1">SVG</span>
+                                                <span class="inline-block px-2.5 py-1 rounded-md bg-purple-100 text-purple-800 font-bold text-xs mr-1">AI</span>
+                                                <span class="inline-block px-2.5 py-1 rounded-md bg-purple-100 text-purple-800 font-bold text-xs">CDR</span>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Interactive Mini Zoom Comparison Inside Bab 3 -->
+                            <div class="bg-slate-900 text-white rounded-2xl p-5 sm:p-6">
+                                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                                    <div>
+                                        <h4 class="font-display font-bold text-base text-cyan-300"><i class="fa-solid fa-eye mr-2"></i>Pengamatan Langsung: Geser Tingkat Perbesaran (Zoom)</h4>
+                                        <p class="text-xs text-slate-400">Amati perbedaan tepi lingkaran Bitmap (kiri) dan Vektor (kanan) saat diperbesar.</p>
+                                    </div>
+                                    <div class="flex items-center gap-3 bg-slate-800 px-4 py-2 rounded-xl">
+                                        <span class="text-xs text-slate-300">Zoom:</span>
+                                        <input type="range" id="bab3-zoom-slider" min="1" max="8" step="0.5" value="1" class="accent-cyan-400 cursor-pointer">
+                                        <span id="bab3-zoom-val" class="text-xs font-bold text-cyan-400 w-10">1.0x</span>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div class="bg-slate-800/80 rounded-xl p-4 border border-slate-700 text-center overflow-hidden">
+                                        <span class="text-xs font-bold text-rose-400 uppercase tracking-wider block mb-2">Bitmap (Susunan Piksel)</span>
+                                        <div class="h-44 flex items-center justify-center overflow-hidden bg-slate-950 rounded-lg">
+                                            <canvas id="bab3-bitmap-canvas" width="64" height="64" class="pixelated-canvas w-36 h-36 transition-transform duration-150"></canvas>
+                                        </div>
+                                    </div>
+                                    <div class="bg-slate-800/80 rounded-xl p-4 border border-slate-700 text-center overflow-hidden">
+                                        <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider block mb-2">Vektor (Kurva Matematis)</span>
+                                        <div class="h-44 flex items-center justify-center overflow-hidden bg-slate-950 rounded-lg">
+                                            <svg id="bab3-vector-svg" viewBox="0 0 100 100" class="w-36 h-36 transition-transform duration-150">
+                                                <defs>
+                                                    <linearGradient id="vecDemoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                        <stop offset="0%" stop-color="#06b6d4"/>
+                                                        <stop offset="100%" stop-color="#8b5cf6"/>
+                                                    </linearGradient>
+                                                </defs>
+                                                <circle cx="50" cy="50" r="38" fill="url(#vecDemoGrad)"/>
+                                                <polygon points="50,24 68,68 32,68" fill="#ffffff"/>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- BAB 4 CONTENT -->
+                    <div id="bab-content-4" class="bab-panel hidden space-y-6">
+                        <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm">
+                            <div class="flex items-center gap-3 mb-2">
+                                <span class="px-3 py-1 rounded-lg bg-purple-100 text-purple-800 font-bold text-xs">BAB 4</span>
+                                <h3 class="font-display text-xl sm:text-2xl font-bold text-navy-900">Mengenal Antarmuka Aplikasi Desain</h3>
+                            </div>
+                            <p class="text-sm text-slate-600 mb-6">Klik nomor atau tombol komponen antarmuka di bawah ini untuk melihat fungsi masing-masing bagian pada ruang kerja aplikasi desain:</p>
+
+                            <!-- Interactive UI Mockup Diagram -->
+                            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                                <!-- Visual Mockup of Design App Workspace -->
+                                <div class="lg:col-span-7 bg-slate-900 rounded-2xl p-3 sm:p-4 border border-slate-700 shadow-xl text-white select-none">
+                                    <!-- 1. Menu Bar -->
+                                    <div onclick="selectUiPart(1)" id="ui-box-1" class="ui-hotspot cursor-pointer bg-slate-800 hover:bg-cyan-900/50 border border-slate-700 rounded-lg px-3 py-1.5 flex items-center justify-between text-[11px] mb-1.5 transition">
+                                        <div class="flex items-center gap-3">
+                                            <span class="px-1.5 py-0.5 rounded bg-cyan-500 text-navy-900 font-bold">1</span>
+                                            <span class="text-slate-300 font-medium">File &nbsp; Edit &nbsp; Object &nbsp; Type &nbsp; View &nbsp; Window</span>
+                                        </div>
+                                        <span class="text-[10px] text-cyan-400 font-semibold">Menu Bar</span>
+                                    </div>
+
+                                    <!-- 2. Toolbar / Control Bar -->
+                                    <div onclick="selectUiPart(2)" id="ui-box-2" class="ui-hotspot cursor-pointer bg-slate-800/80 hover:bg-cyan-900/50 border border-slate-700 rounded-lg px-3 py-1.5 flex items-center justify-between text-[11px] mb-2 transition">
+                                        <div class="flex items-center gap-2">
+                                            <span class="px-1.5 py-0.5 rounded bg-cyan-500 text-navy-900 font-bold">2</span>
+                                            <span class="text-slate-400">X: 120px &nbsp;|&nbsp; Y: 80px &nbsp;|&nbsp; W: 500px &nbsp;|&nbsp; Opacity: 100%</span>
+                                        </div>
+                                        <span class="text-[10px] text-cyan-400 font-semibold">Toolbar</span>
+                                    </div>
+
+                                    <!-- Main Workspace Row -->
+                                    <div class="grid grid-cols-12 gap-2 h-64 sm:h-72">
+                                        <!-- 3. Toolbox -->
+                                        <div onclick="selectUiPart(3)" id="ui-box-3" class="ui-hotspot cursor-pointer col-span-2 bg-slate-800 hover:bg-cyan-900/50 border border-slate-700 rounded-lg p-1.5 flex flex-col items-center justify-between transition">
+                                            <span class="px-1.5 py-0.5 rounded bg-cyan-500 text-navy-900 font-bold text-[10px]">3</span>
+                                            <div class="space-y-2 text-slate-300 text-xs flex flex-col items-center">
+                                                <i class="fa-solid fa-arrow-pointer text-cyan-400"></i>
+                                                <i class="fa-solid fa-pen-nib"></i>
+                                                <i class="fa-solid fa-font"></i>
+                                                <i class="fa-regular fa-square"></i>
+                                                <i class="fa-solid fa-paintbrush"></i>
+                                                <i class="fa-solid fa-magnifying-glass"></i>
+                                            </div>
+                                            <span class="text-[9px] text-center text-slate-400">Toolbox</span>
+                                        </div>
+
+                                        <!-- 6. Canvas / Artboard + 8. Workspace -->
+                                        <div onclick="selectUiPart(6)" id="ui-box-6" class="ui-hotspot cursor-pointer col-span-6 bg-slate-950 hover:border-cyan-400 border border-slate-700 rounded-lg p-3 flex flex-col items-center justify-center relative transition">
+                                            <span class="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-cyan-500 text-navy-900 font-bold text-[10px]">6</span>
+                                            <button onclick="event.stopPropagation(); selectUiPart(8)" class="absolute top-2 right-2 px-2 py-0.5 rounded bg-purple-600 hover:bg-purple-500 text-white font-bold text-[10px]">8. Workspace</button>
+                                            <!-- White Artboard -->
+                                            <div class="w-32 sm:w-40 h-40 sm:h-48 bg-white rounded shadow-lg p-3 flex flex-col items-center justify-center text-navy-900">
+                                                <div class="w-14 h-14 rounded-full bg-gradient-to-tr from-cyan-400 to-purple-600 mb-2"></div>
+                                                <div class="w-20 h-2 bg-slate-800 rounded mb-1"></div>
+                                                <div class="w-14 h-1.5 bg-slate-400 rounded"></div>
+                                                <span class="text-[9px] font-bold text-slate-400 mt-3">CANVAS / ARTBOARD</span>
+                                            </div>
+                                        </div>
+
+                                        <!-- Right Panels: 4. Color, 7. Properties, 5. Layer -->
+                                        <div class="col-span-4 flex flex-col gap-1.5">
+                                            <!-- 4. Panel Warna -->
+                                            <div onclick="selectUiPart(4)" id="ui-box-4" class="ui-hotspot cursor-pointer bg-slate-800 hover:bg-cyan-900/50 border border-slate-700 rounded-lg p-2 transition">
+                                                <div class="flex items-center justify-between mb-1">
+                                                    <span class="px-1.5 py-0.5 rounded bg-cyan-500 text-navy-900 font-bold text-[10px]">4</span>
+                                                    <span class="text-[10px] text-slate-300 font-semibold">Panel Warna</span>
+                                                </div>
+                                                <div class="grid grid-cols-5 gap-1">
+                                                    <span class="h-3 rounded bg-cyan-400"></span>
+                                                    <span class="h-3 rounded bg-purple-500"></span>
+                                                    <span class="h-3 rounded bg-rose-500"></span>
+                                                    <span class="h-3 rounded bg-amber-400"></span>
+                                                    <span class="h-3 rounded bg-emerald-400"></span>
+                                                </div>
+                                            </div>
+
+                                            <!-- 7. Properties Panel -->
+                                            <div onclick="selectUiPart(7)" id="ui-box-7" class="ui-hotspot cursor-pointer bg-slate-800 hover:bg-cyan-900/50 border border-slate-700 rounded-lg p-2 transition">
+                                                <div class="flex items-center justify-between mb-1">
+                                                    <span class="px-1.5 py-0.5 rounded bg-cyan-500 text-navy-900 font-bold text-[10px]">7</span>
+                                                    <span class="text-[10px] text-slate-300 font-semibold">Properties</span>
+                                                </div>
+                                                <div class="space-y-1 text-[9px] text-slate-400">
+                                                    <div class="bg-slate-900 px-1.5 py-0.5 rounded">Fill: #06B6D4</div>
+                                                    <div class="bg-slate-900 px-1.5 py-0.5 rounded">Stroke: 2 pt</div>
+                                                </div>
+                                            </div>
+
+                                            <!-- 5. Layer Panel -->
+                                            <div onclick="selectUiPart(5)" id="ui-box-5" class="ui-hotspot cursor-pointer flex-1 bg-slate-800 hover:bg-cyan-900/50 border border-slate-700 rounded-lg p-2 transition">
+                                                <div class="flex items-center justify-between mb-1">
+                                                    <span class="px-1.5 py-0.5 rounded bg-cyan-500 text-navy-900 font-bold text-[10px]">5</span>
+                                                    <span class="text-[10px] text-slate-300 font-semibold">Layer</span>
+                                                </div>
+                                                <div class="space-y-1 text-[9px]">
+                                                    <div class="bg-cyan-950/80 border border-cyan-500/40 px-1.5 py-0.5 rounded text-cyan-200 flex items-center gap-1"><i class="fa-solid fa-eye"></i> Teks Judul</div>
+                                                    <div class="bg-slate-900 px-1.5 py-0.5 rounded text-slate-400 flex items-center gap-1"><i class="fa-solid fa-eye"></i> Objek Utama</div>
+                                                    <div class="bg-slate-900 px-1.5 py-0.5 rounded text-slate-400 flex items-center gap-1"><i class="fa-solid fa-eye"></i> Background</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Explanation Card -->
+                                <div class="lg:col-span-5 space-y-4">
+                                    <div id="ui-detail-card" class="bg-gradient-to-br from-navy-900 to-indigo-950 text-white p-6 rounded-2xl shadow-lg border border-slate-800">
+                                        <span id="ui-detail-badge" class="inline-block px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-300 text-xs font-bold mb-2">Komponen #1</span>
+                                        <h4 id="ui-detail-title" class="font-display text-xl font-bold text-white">Menu Bar</h4>
+                                        <p id="ui-detail-desc" class="text-sm text-slate-300 mt-2 leading-relaxed">
+                                            Baris perintah utama di bagian paling atas aplikasi (seperti File, Edit, Object, Type, View, Window) untuk mengelola dokumen, menyimpan file, ekspor hasil desain, dan mengatur tampilan panel.
+                                        </p>
+                                    </div>
+
+                                    <!-- Quick Selector Pills for All 8 Components -->
+                                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                                        <p class="text-xs font-bold text-slate-500 uppercase mb-2.5">Pilih Komponen Antarmuka:</p>
+                                        <div class="flex flex-wrap gap-2">
+                                            <button onclick="selectUiPart(1)" class="ui-pill-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-navy-900 text-white" data-ui="1">1. Menu Bar</button>
+                                            <button onclick="selectUiPart(2)" class="ui-pill-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100" data-ui="2">2. Toolbar</button>
+                                            <button onclick="selectUiPart(3)" class="ui-pill-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100" data-ui="3">3. Toolbox</button>
+                                            <button onclick="selectUiPart(4)" class="ui-pill-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100" data-ui="4">4. Panel Warna</button>
+                                            <button onclick="selectUiPart(5)" class="ui-pill-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100" data-ui="5">5. Layer</button>
+                                            <button onclick="selectUiPart(6)" class="ui-pill-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100" data-ui="6">6. Canvas / Artboard</button>
+                                            <button onclick="selectUiPart(7)" class="ui-pill-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100" data-ui="7">7. Properties Panel</button>
+                                            <button onclick="selectUiPart(8)" class="ui-pill-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100" data-ui="8">8. Workspace</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- BAB 5 CONTENT -->
+                    <div id="bab-content-5" class="bab-panel hidden space-y-6">
+                        <div class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm">
+                            <div class="flex items-center gap-3 mb-2">
+                                <span class="px-3 py-1 rounded-lg bg-cyan-100 text-cyan-800 font-bold text-xs">BAB 5</span>
+                                <h3 class="font-display text-xl sm:text-2xl font-bold text-navy-900">Penerapan Perangkat Lunak Desain dalam Proyek DKV</h3>
+                            </div>
+                            <p class="text-sm text-slate-600 mb-6">Setiap jenis proyek DKV membutuhkan pendekatan dan rekomendasi perangkat lunak yang tepat agar hasil maksimal:</p>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                                <!-- Project 1: Poster -->
+                                <div class="p-5 rounded-2xl border border-slate-200 bg-gradient-to-b from-white to-slate-50 hover:border-cyan-400 transition">
+                                    <div class="w-12 h-12 rounded-2xl bg-cyan-100 text-cyan-700 flex items-center justify-center text-xl mb-4">
+                                        <i class="fa-solid fa-image"></i>
+                                    </div>
+                                    <h4 class="font-display font-bold text-navy-900 text-base">1. Pembuatan Poster</h4>
+                                    <p class="text-xs text-slate-600 mt-1.5 leading-relaxed">Memadukan manipulasi foto dramatis, efek pencahayaan, dan tipografi judul yang kuat untuk promosi acara atau produk.</p>
+                                    <div class="mt-4 pt-3 border-t border-slate-200">
+                                        <span class="text-[11px] font-bold text-slate-400 uppercase block">Rekomendasi Software:</span>
+                                        <span class="inline-block mt-1 px-2.5 py-1 rounded-lg bg-navy-900 text-cyan-300 text-xs font-bold">Adobe Photoshop / Illustrator</span>
+                                    </div>
+                                </div>
+
+                                <!-- Project 2: Desain Logo -->
+                                <div class="p-5 rounded-2xl border border-slate-200 bg-gradient-to-b from-white to-slate-50 hover:border-purple-400 transition">
+                                    <div class="w-12 h-12 rounded-2xl bg-purple-100 text-purple-700 flex items-center justify-center text-xl mb-4">
+                                        <i class="fa-solid fa-crown"></i>
+                                    </div>
+                                    <h4 class="font-display font-bold text-navy-900 text-base">2. Desain Logo & Identitas</h4>
+                                    <p class="text-xs text-slate-600 mt-1.5 leading-relaxed">Membutuhkan bentuk geometris presisi dan skalabilitas tinggi agar tetap tajam dari kartu nama hingga papan reklame.</p>
+                                    <div class="mt-4 pt-3 border-t border-slate-200">
+                                        <span class="text-[11px] font-bold text-slate-400 uppercase block">Rekomendasi Software:</span>
+                                        <span class="inline-block mt-1 px-2.5 py-1 rounded-lg bg-navy-900 text-amber-300 text-xs font-bold">Adobe Illustrator / CorelDRAW</span>
+                                    </div>
+                                </div>
+
+                                <!-- Project 3: Desain Brosur -->
+                                <div class="p-5 rounded-2xl border border-slate-200 bg-gradient-to-b from-white to-slate-50 hover:border-rose-400 transition">
+                                    <div class="w-12 h-12 rounded-2xl bg-rose-100 text-rose-700 flex items-center justify-center text-xl mb-4">
+                                        <i class="fa-solid fa-book-open-reader"></i>
+                                    </div>
+                                    <h4 class="font-display font-bold text-navy-900 text-base">3. Desain Brosur & Katalog</h4>
+                                    <p class="text-xs text-slate-600 mt-1.5 leading-relaxed">Mengatur tata letak kolom teks, gambar produk, lipatan (tri-fold), dan margin cetak dengan keterbacaan tinggi.</p>
+                                    <div class="mt-4 pt-3 border-t border-slate-200">
+                                        <span class="text-[11px] font-bold text-slate-400 uppercase block">Rekomendasi Software:</span>
+                                        <span class="inline-block mt-1 px-2.5 py-1 rounded-lg bg-navy-900 text-rose-300 text-xs font-bold">Adobe InDesign / CorelDRAW</span>
+                                    </div>
+                                </div>
+
+                                <!-- Project 4: Desain Kemasan -->
+                                <div class="p-5 rounded-2xl border border-slate-200 bg-gradient-to-b from-white to-slate-50 hover:border-emerald-400 transition">
+                                    <div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-xl mb-4">
+                                        <i class="fa-solid fa-cube"></i>
+                                    </div>
+                                    <h4 class="font-display font-bold text-navy-900 text-base">4. Desain Kemasan Produk</h4>
+                                    <p class="text-xs text-slate-600 mt-1.5 leading-relaxed">Merancang pola jaring-jaring kemasan (dieline), garis potong (cutting), garis lipat (creasing), dan informasi nilai gizi.</p>
+                                    <div class="mt-4 pt-3 border-t border-slate-200">
+                                        <span class="text-[11px] font-bold text-slate-400 uppercase block">Rekomendasi Software:</span>
+                                        <span class="inline-block mt-1 px-2.5 py-1 rounded-lg bg-navy-900 text-emerald-300 text-xs font-bold">CorelDRAW / Adobe Illustrator</span>
+                                    </div>
+                                </div>
+
+                                <!-- Project 5: Konten Media Sosial -->
+                                <div class="p-5 rounded-2xl border border-slate-200 bg-gradient-to-b from-white to-slate-50 hover:border-sky-400 transition">
+                                    <div class="w-12 h-12 rounded-2xl bg-sky-100 text-sky-700 flex items-center justify-center text-xl mb-4">
+                                        <i class="fa-solid fa-share-nodes"></i>
+                                    </div>
+                                    <h4 class="font-display font-bold text-navy-900 text-base">5. Konten Media Sosial</h4>
+                                    <p class="text-xs text-slate-600 mt-1.5 leading-relaxed">Produksi cepat konten carousel Instagram, story promosi, dan thumbnail video dengan ukuran rasio layar digital.</p>
+                                    <div class="mt-4 pt-3 border-t border-slate-200">
+                                        <span class="text-[11px] font-bold text-slate-400 uppercase block">Rekomendasi Software:</span>
+                                        <span class="inline-block mt-1 px-2.5 py-1 rounded-lg bg-navy-900 text-sky-300 text-xs font-bold">Canva / Adobe Photoshop</span>
+                                    </div>
+                                </div>
+
+                                <!-- Project 6: UI/UX Aplikasi -->
+                                <div class="p-5 rounded-2xl border border-slate-200 bg-gradient-to-b from-white to-slate-50 hover:border-indigo-400 transition">
+                                    <div class="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-700 flex items-center justify-center text-xl mb-4">
+                                        <i class="fa-solid fa-mobile-screen"></i>
+                                    </div>
+                                    <h4 class="font-display font-bold text-navy-900 text-base">6. Desain Antarmuka Aplikasi</h4>
+                                    <p class="text-xs text-slate-600 mt-1.5 leading-relaxed">Membuat tampilan layar aplikasi smartphone, tombol navigasi interaktif, wireframe, dan alur pengalaman pengguna (UX).</p>
+                                    <div class="mt-4 pt-3 border-t border-slate-200">
+                                        <span class="text-[11px] font-bold text-slate-400 uppercase block">Rekomendasi Software:</span>
+                                        <span class="inline-block mt-1 px-2.5 py-1 rounded-lg bg-navy-900 text-purple-300 text-xs font-bold">Figma</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ==========================================
+                     4. SIMULASI INTERAKTIF (4 AKTIVITAS)
+                ========================================== -->
+                <section id="page-simulasi" class="page-section hidden animate-page">
+                    <div class="mb-6">
+                        <span class="text-xs font-bold uppercase tracking-wider text-cyan-600 bg-cyan-50 px-3 py-1 rounded-full">Laboratorium Virtual DKV</span>
+                        <h2 class="font-display text-2xl sm:text-3xl font-extrabold text-navy-900 mt-2">Simulasi Interaktif</h2>
+                        <p class="text-slate-600 text-sm mt-1">Eksplorasi langsung konsep perangkat lunak desain melalui 4 aktivitas praktik interaktif berikut:</p>
+                    </div>
+
+                    <!-- Simulation Selector Tabs -->
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 mb-6">
+                        <button onclick="switchSim(1)" data-sim="1" class="sim-tab-btn p-3.5 rounded-2xl text-left bg-navy-900 text-white shadow transition">
+                            <span class="text-[10px] font-bold uppercase text-cyan-400 block">Simulasi A</span>
+                            <span class="font-display font-bold text-xs sm:text-sm">Bitmap vs Vektor</span>
+                        </button>
+                        <button onclick="switchSim(2)" data-sim="2" class="sim-tab-btn p-3.5 rounded-2xl text-left bg-white text-slate-700 border border-slate-200 hover:bg-slate-100 transition">
+                            <span class="text-[10px] font-bold uppercase text-purple-600 block">Simulasi B</span>
+                            <span class="font-display font-bold text-xs sm:text-sm">Tebak Software</span>
+                        </button>
+                        <button onclick="switchSim(3)" data-sim="3" class="sim-tab-btn p-3.5 rounded-2xl text-left bg-white text-slate-700 border border-slate-200 hover:bg-slate-100 transition">
+                            <span class="text-[10px] font-bold uppercase text-emerald-600 block">Simulasi C</span>
+                            <span class="font-display font-bold text-xs sm:text-sm">Cocokkan Fungsi</span>
+                        </button>
+                        <button onclick="switchSim(4)" data-sim="4" class="sim-tab-btn p-3.5 rounded-2xl text-left bg-white text-slate-700 border border-slate-200 hover:bg-slate-100 transition">
+                            <span class="text-[10px] font-bold uppercase text-amber-600 block">Simulasi D</span>
+                            <span class="font-display font-bold text-xs sm:text-sm">Pilih Software Tepat</span>
+                        </button>
+                    </div>
+
+                    <!-- SIMULASI A: BITMAP VS VEKTOR ZOOM LAB -->
+                    <div id="sim-panel-1" class="sim-panel bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm">
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-200">
+                            <div>
+                                <h3 class="font-display text-xl font-bold text-navy-900">A. Simulasi Perbandingan Zoom Bitmap & Vektor</h3>
+                                <p class="text-xs sm:text-sm text-slate-500 mt-1">Pilih objek desain dan atur level pembesaran (100% hingga 800%) untuk mengamati ketajaman piksel vs kurva.</p>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <button onclick="setSimShape('star')" class="sim-shape-btn px-3.5 py-2 rounded-xl text-xs font-bold bg-cyan-600 text-white" data-shape="star">Bintang Kreatif</button>
+                                <button onclick="setSimShape('logo')" class="sim-shape-btn px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200" data-shape="logo">Ikon Kamera</button>
+                                <button onclick="setSimShape('typo')" class="sim-shape-btn px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200" data-shape="typo">Huruf "DKV"</button>
+                            </div>
+                        </div>
+
+                        <!-- Zoom Slider Control -->
+                        <div class="my-6 bg-slate-50 p-4 rounded-2xl border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+                            <label for="sim-zoom-range" class="text-sm font-bold text-navy-900 flex items-center gap-2">
+                                <i class="fa-solid fa-magnifying-glass-plus text-cyan-600"></i> Tingkat Pembesaran (Zoom):
+                            </label>
+                            <div class="flex items-center gap-4 w-full sm:w-auto flex-1 max-w-md">
+                                <input type="range" id="sim-zoom-range" min="1" max="8" step="0.5" value="1" class="w-full accent-purple-600 cursor-pointer">
+                                <span id="sim-zoom-badge" class="px-3 py-1 rounded-lg bg-navy-900 text-cyan-300 font-display font-bold text-sm min-w-[72px] text-center">100%</span>
+                            </div>
+                        </div>
+
+                        <!-- Dual Viewport -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="rounded-2xl border-2 border-rose-200 bg-slate-900 p-4 text-center">
+                                <div class="flex items-center justify-between mb-3">
+                                    <span class="px-2.5 py-1 rounded-md bg-rose-500/20 text-rose-300 text-xs font-bold">BITMAP (48 x 48 px)</span>
+                                    <span class="text-[11px] text-slate-400">Format: JPG / PNG</span>
+                                </div>
+                                <div class="h-64 bg-slate-950 rounded-xl overflow-hidden flex items-center justify-center relative">
+                                    <canvas id="sim-bitmap-canvas" width="48" height="48" class="pixelated-canvas w-48 h-48 transition-transform duration-150"></canvas>
+                                </div>
+                                <p id="sim-bitmap-note" class="text-xs text-rose-300 mt-3">Pada zoom 100%, gambar terlihat normal. Coba geser zoom ke 500%!</p>
+                            </div>
+
+                            <div class="rounded-2xl border-2 border-emerald-200 bg-slate-900 p-4 text-center">
+                                <div class="flex items-center justify-between mb-3">
+                                    <span class="px-2.5 py-1 rounded-md bg-emerald-500/20 text-emerald-300 text-xs font-bold">VEKTOR (Kurva Bezier)</span>
+                                    <span class="text-[11px] text-slate-400">Format: SVG / AI / CDR</span>
+                                </div>
+                                <div class="h-64 bg-slate-950 rounded-xl overflow-hidden flex items-center justify-center relative" id="sim-vector-container">
+                                    <!-- Dynamic SVG injected here -->
+                                </div>
+                                <p id="sim-vector-note" class="text-xs text-emerald-300 mt-3">Garis vektor dihitung ulang secara matematis sehingga selalu halus!</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SIMULASI B: TEBAK SOFTWARE -->
+                    <div id="sim-panel-2" class="sim-panel hidden bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm">
+                        <div class="flex items-center justify-between mb-4">
+                            <div>
+                                <h3 class="font-display text-xl font-bold text-navy-900">B. Tebak Software Desain</h3>
+                                <p class="text-xs sm:text-sm text-slate-500">Amati ilustrasi hasil karya berikut, lalu pilih software utama yang paling tepat untuk membuatnya!</p>
+                            </div>
+                            <span id="tebak-counter" class="px-3 py-1 rounded-full bg-purple-100 text-purple-800 font-bold text-xs">Studi Karya 1 / 4</span>
+                        </div>
+
+                        <div id="tebak-container" class="grid grid-cols-1 md:grid-cols-12 gap-6 items-center mt-4">
+                            <!-- Visual Artwork Preview -->
+                            <div class="md:col-span-5 bg-gradient-to-br from-navy-900 to-slate-800 rounded-2xl p-6 text-white text-center flex flex-col items-center justify-center min-h-[240px]" id="tebak-visual">
+                                <!-- Filled by JS -->
+                            </div>
+                            <!-- Choices & Feedback -->
+                            <div class="md:col-span-7 space-y-4">
+                                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                                    <span class="text-xs font-bold text-cyan-600 uppercase">Deskripsi Karya:</span>
+                                    <h4 id="tebak-title" class="font-display font-bold text-lg text-navy-900 mt-0.5">Judul Karya</h4>
+                                    <p id="tebak-desc" class="text-xs sm:text-sm text-slate-600 mt-1">Deskripsi</p>
+                                </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3" id="tebak-options">
+                                    <!-- Buttons injected by JS -->
+                                </div>
+                                <div id="tebak-feedback" class="hidden p-4 rounded-2xl text-xs sm:text-sm font-medium"></div>
+                                <div class="flex justify-end">
+                                    <button onclick="nextTebak()" id="tebak-next-btn" class="hidden px-5 py-2.5 rounded-xl bg-navy-900 text-white text-xs font-bold hover:bg-navy-800 transition">
+                                        Karya Berikutnya <i class="fa-solid fa-arrow-right ml-1"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SIMULASI C: COCOKKAN FUNGSI (DRAG & DROP / TAP TO MATCH) -->
+                    <div id="sim-panel-3" class="sim-panel hidden bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+                            <div>
+                                <h3 class="font-display text-xl font-bold text-navy-900">C. Cocokkan Software dengan Fungsinya</h3>
+                                <p class="text-xs sm:text-sm text-slate-500">Seret (<em>drag & drop</em>) kartu nama software ke kotak fungsi yang tepat. Pada layar sentuh, kamu juga bisa klik kartu lalu klik kotak tujuannya!</p>
+                            </div>
+                            <button onclick="initDragDropGame()" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold shrink-0">
+                                <i class="fa-solid fa-rotate-right mr-1"></i> Acak Ulang
+                            </button>
+                        </div>
+
+                        <!-- Draggable Software Pills -->
+                        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 mb-6">
+                            <span class="text-xs font-bold text-slate-500 uppercase block mb-3">Pilihan Perangkat Lunak:</span>
+                            <div id="drag-items-pool" class="flex flex-wrap gap-3">
+                                <!-- Filled by JS -->
+                            </div>
+                        </div>
+
+                        <!-- Drop Zones -->
+                        <div id="drop-zones-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Filled by JS -->
+                        </div>
+
+                        <div id="dnd-feedback" class="mt-5 hidden p-4 rounded-2xl text-sm font-semibold text-center"></div>
+                    </div>
+
+                    <!-- SIMULASI D: PILIH SOFTWARE YANG TEPAT (STUDI KASUS) -->
+                    <div id="sim-panel-4" class="sim-panel hidden bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm">
+                        <div class="mb-6">
+                            <h3 class="font-display text-xl font-bold text-navy-900">D. Studi Kasus Klien: Pilih Software yang Paling Tepat</h3>
+                            <p class="text-xs sm:text-sm text-slate-500">Kamu berperan sebagai desainer junior di studio DKV. Pilih aplikasi paling efektif untuk setiap permintaan klien berikut:</p>
+                        </div>
+
+                        <div id="case-study-list" class="space-y-4">
+                            <!-- Case studies rendered by JS -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ==========================================
+                     6. LATIHAN SOAL (10 SOAL + PEMBAHASAN)
+                ========================================== -->
+                <section id="page-latihan" class="page-section hidden animate-page">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                        <div>
+                            <span class="text-xs font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-3 py-1 rounded-full">Uji Pemahaman Mandiri</span>
+                            <h2 class="font-display text-2xl sm:text-3xl font-extrabold text-navy-900 mt-2">Latihan Soal Interaktif</h2>
+                            <p class="text-slate-600 text-sm mt-1">Kerjakan 10 soal pilihan ganda berikut. Pembahasan singkat akan muncul otomatis setelah kamu memilih jawaban.</p>
+                        </div>
+                        <div class="bg-white px-4 py-3 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 shrink-0">
+                            <div>
+                                <span class="text-[11px] text-slate-400 block">Terjawab Benar</span>
+                                <span id="latihan-score-badge" class="font-display font-extrabold text-lg text-emerald-600">0 / 10</span>
+                            </div>
+                            <button onclick="resetLatihan()" class="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold" title="Ulangi Latihan">
+                                <i class="fa-solid fa-rotate-left"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="latihan-questions-container" class="space-y-5">
+                        <!-- 10 Multiple Choice Questions rendered by JS -->
+                    </div>
+                </section>
+
+                <!-- ==========================================
+                     7. EVALUASI PEMBELAJARAN & PROYEK PRAKTIK
+                ========================================== -->
+                <section id="page-evaluasi" class="page-section hidden animate-page space-y-8">
+                    <!-- Sub-navigation between Evaluasi 15 Soal & Proyek Praktik -->
+                    <div class="flex flex-wrap items-center justify-between gap-4">
+                        <div>
+                            <span class="text-xs font-bold uppercase tracking-wider text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">Asesmen Sumatif & Praktik</span>
+                            <h2 class="font-display text-2xl sm:text-3xl font-extrabold text-navy-900 mt-2">Evaluasi & Proyek Praktik DKV</h2>
+                        </div>
+                        <div class="flex gap-2 bg-white p-1.5 rounded-2xl border border-slate-200 shadow-sm">
+                            <button onclick="switchEvalMode('kuis')" id="btn-mode-kuis" class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-navy-900 text-white transition">
+                                <i class="fa-solid fa-file-signature mr-1.5"></i> Evaluasi Akhir (15 Soal)
+                            </button>
+                            <button onclick="switchEvalMode('proyek')" id="btn-mode-proyek" class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold text-slate-600 hover:bg-slate-100 transition">
+                                <i class="fa-solid fa-palette mr-1.5"></i> Proyek Praktik Poster
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- PART A: 15-QUESTION STEP-BY-STEP EVALUATION -->
+                    <div id="eval-kuis-wrapper" class="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm">
+                        <!-- Active Quiz Screen -->
+                        <div id="eval-active-screen">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-5 border-b border-slate-200">
+                                <div>
+                                    <span id="eval-q-indicator" class="text-xs font-bold text-cyan-600 uppercase tracking-wider">Soal 1 dari 15</span>
+                                    <h3 class="font-display font-bold text-lg text-navy-900">Evaluasi Akhir: Perangkat Lunak Desain</h3>
+                                </div>
+                                <div class="text-xs text-slate-500">
+                                    Terjawab: <span id="eval-answered-count" class="font-bold text-navy-900">0</span> / 15
+                                </div>
+                            </div>
+
+                            <!-- Number Navigator Pills -->
+                            <div id="eval-number-pills" class="flex flex-wrap gap-1.5 my-5">
+                                <!-- 1..15 buttons injected by JS -->
+                            </div>
+
+                            <!-- Current Question Display -->
+                            <div class="bg-slate-50 p-5 sm:p-6 rounded-2xl border border-slate-200 my-4">
+                                <p id="eval-question-text" class="font-semibold text-navy-900 text-base sm:text-lg leading-relaxed">
+                                    Pertanyaan akan tampil di sini...
+                                </p>
+                                <div id="eval-options-list" class="space-y-3 mt-5">
+                                    <!-- Options A, B, C, D injected by JS -->
+                                </div>
+                            </div>
+
+                            <!-- Prev / Next / Submit Controls -->
+                            <div class="flex items-center justify-between pt-4">
+                                <button onclick="prevEvalQuestion()" id="eval-prev-btn" class="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs sm:text-sm disabled:opacity-40 transition">
+                                    <i class="fa-solid fa-arrow-left mr-1.5"></i> Sebelumnya
+                                </button>
+
+                                <div class="flex gap-3">
+                                    <button onclick="nextEvalQuestion()" id="eval-next-btn" class="px-6 py-2.5 rounded-xl bg-navy-900 hover:bg-navy-800 text-white font-bold text-xs sm:text-sm transition">
+                                        Berikutnya <i class="fa-solid fa-arrow-right ml-1.5"></i>
+                                    </button>
+                                    <button onclick="submitEvaluation()" id="eval-submit-btn" class="hidden px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-600 hover:from-emerald-400 hover:to-cyan-500 text-white font-bold text-xs sm:text-sm shadow-lg transition">
+                                        <i class="fa-solid fa-check-double mr-1.5"></i> Selesai & Lihat Nilai
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Result Screen -->
+                        <div id="eval-result-screen" class="hidden space-y-6">
+                            <div class="bg-gradient-to-br from-navy-900 via-navy-800 to-indigo-950 text-white rounded-3xl p-6 sm:p-10 text-center relative overflow-hidden">
+                                <span class="inline-block px-3.5 py-1 rounded-full bg-white/10 text-cyan-300 text-xs font-bold uppercase mb-2">Hasil Evaluasi Pembelajaran</span>
+                                <p id="eval-student-result-info" class="text-xs sm:text-sm text-cyan-200 font-semibold mb-2">Peserta Didik: -</p>
+                                <div class="my-2">
+                                    <span class="text-xs text-slate-300 block">Nilai Akhir Kamu:</span>
+                                    <div id="eval-final-score" class="font-display text-5xl sm:text-6xl font-extrabold text-gradient my-1">0</div>
+                                    <span id="eval-correct-summary" class="text-xs sm:text-sm text-slate-300">Benar 0 dari 15 soal</span>
+                                </div>
+                                <div id="eval-predicate-badge" class="inline-block mt-3 px-5 py-2 rounded-2xl bg-cyan-500/20 border border-cyan-400/30 text-cyan-200 font-bold text-sm">
+                                    Keterangan Hasil Belajar
+                                </div>
+                                <div class="mt-6">
+                                    <button onclick="restartEvaluation()" class="px-6 py-3 rounded-xl bg-white text-navy-900 hover:bg-cyan-50 font-display font-bold text-sm shadow-lg transition">
+                                        <i class="fa-solid fa-rotate-right mr-2"></i> Ulangi Evaluasi
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Detailed Feedback Review -->
+                            <div>
+                                <h4 class="font-display font-bold text-lg text-navy-900 mb-3">Umpan Balik Jawaban Benar & Salah:</h4>
+                                <div id="eval-review-list" class="space-y-3">
+                                    <!-- Review items injected by JS -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PART B: PROYEK PRAKTIK -->
+                    <div id="eval-proyek-wrapper" class="hidden bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-sm space-y-6">
+                        <div class="bg-gradient-to-r from-navy-900 to-purple-950 text-white p-6 sm:p-8 rounded-2xl">
+                            <span class="px-3 py-1 rounded-full bg-cyan-400/20 text-cyan-300 text-xs font-bold uppercase">Tugas Proyek Praktik DKV</span>
+                            <h3 class="font-display text-xl sm:text-2xl font-extrabold mt-2">MEMBUAT DESAIN POSTER PROMOSI PRODUK LOKAL</h3>
+                            <p class="text-xs sm:text-sm text-slate-300 mt-1">Terapkan pemahamanmu memilih dan mengoperasikan perangkat lunak desain untuk mempromosikan potensi produk unggulan daerah!</p>
+                        </div>
+
+                        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                            <!-- 6 Step Instructions -->
+                            <div class="lg:col-span-7 space-y-4">
+                                <h4 class="font-display font-bold text-lg text-navy-900 flex items-center gap-2">
+                                    <i class="fa-solid fa-list-ol text-cyan-600"></i> Instruksi Pengerjaan Proyek
+                                </h4>
+                                <ol class="space-y-3 text-sm text-slate-700">
+                                    <li class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-start gap-3">
+                                        <span class="w-6 h-6 rounded-full bg-navy-900 text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">1</span>
+                                        <span><strong>Tentukan produk lokal</strong> yang akan dipromosikan (contoh: kopi khas Papua, keripik keladi, batik daerah, kerajinan noken, atau kuliner UMKM).</span>
+                                    </li>
+                                    <li class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-start gap-3">
+                                        <span class="w-6 h-6 rounded-full bg-navy-900 text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">2</span>
+                                        <span><strong>Tentukan target audiens</strong> (usia, minat, dan gaya komunikasi visual yang sesuai).</span>
+                                    </li>
+                                    <li class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-start gap-3">
+                                        <span class="w-6 h-6 rounded-full bg-navy-900 text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">3</span>
+                                        <span><strong>Pilih software desain yang sesuai</strong> (misalnya Adobe Photoshop untuk olah foto produk, Adobe Illustrator/CorelDRAW untuk vektor & tipografi, atau Canva).</span>
+                                    </li>
+                                    <li class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-start gap-3">
+                                        <span class="w-6 h-6 rounded-full bg-navy-900 text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">4</span>
+                                        <span><strong>Buat poster promosi</strong> ukuran A3 atau rasio 4:5 (1080x1350 px) dengan komposisi visual yang menarik.</span>
+                                    </li>
+                                    <li class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-start gap-3">
+                                        <span class="w-6 h-6 rounded-full bg-navy-900 text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">5</span>
+                                        <span><strong>Terapkan prinsip desain</strong> meliputi keseimbangan (<em>balance</em>), kontras warna, hierarki tipografi, dan kesatuan (<em>unity</em>).</span>
+                                    </li>
+                                    <li class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-start gap-3">
+                                        <span class="w-6 h-6 rounded-full bg-navy-900 text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">6</span>
+                                        <span><strong>Simpan hasil desain</strong> dalam format resolusi tinggi <strong>JPG atau PNG</strong> beserta file mentah kerjanya (PSD/AI/CDR).</span>
+                                    </li>
+                                </ol>
+                            </div>
+
+                            <!-- Rubric & Interactive Student Project Planner -->
+                            <div class="lg:col-span-5 space-y-5">
+                                <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200">
+                                    <h4 class="font-display font-bold text-base text-navy-900 mb-3 flex items-center gap-2">
+                                        <i class="fa-solid fa-scale-balanced text-purple-600"></i> Rubrik Penilaian Proyek
+                                    </h4>
+                                    <div class="space-y-3 text-xs sm:text-sm">
+                                        <div>
+                                            <div class="flex justify-between font-bold text-slate-800 mb-1">
+                                                <span>1. Kesesuaian Konsep & Target</span>
+                                                <span class="text-cyan-600">25%</span>
+                                            </div>
+                                            <div class="w-full h-2 bg-slate-200 rounded-full"><div class="h-full bg-cyan-500 rounded-full w-1/4"></div></div>
+                                        </div>
+                                        <div>
+                                            <div class="flex justify-between font-bold text-slate-800 mb-1">
+                                                <span>2. Komposisi dan Tata Letak</span>
+                                                <span class="text-purple-600">25%</span>
+                                            </div>
+                                            <div class="w-full h-2 bg-slate-200 rounded-full"><div class="h-full bg-purple-500 rounded-full w-1/4"></div></div>
+                                        </div>
+                                        <div>
+                                            <div class="flex justify-between font-bold text-slate-800 mb-1">
+                                                <span>3. Kreativitas & Orisinalitas</span>
+                                                <span class="text-blue-600">25%</span>
+                                            </div>
+                                            <div class="w-full h-2 bg-slate-200 rounded-full"><div class="h-full bg-blue-500 rounded-full w-1/4"></div></div>
+                                        </div>
+                                        <div>
+                                            <div class="flex justify-between font-bold text-slate-800 mb-1">
+                                                <span>4. Penggunaan Software & Kualitas Hasil</span>
+                                                <span class="text-emerald-600">25%</span>
+                                            </div>
+                                            <div class="w-full h-2 bg-slate-200 rounded-full"><div class="h-full bg-emerald-500 rounded-full w-1/4"></div></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Interactive Concept Brief Form (Saved in LocalStorage) -->
+                                <div class="bg-cyan-50/60 p-5 rounded-2xl border border-cyan-200 space-y-3">
+                                    <h4 class="font-display font-bold text-sm text-navy-900">Catatan Konsep Proyek Siswa</h4>
+                                    <input type="text" id="proj-product" placeholder="Nama Produk Lokal..." class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs bg-white focus:outline-none focus:border-cyan-500">
+                                    <input type="text" id="proj-audience" placeholder="Target Audiens (misal: Remaja & Wisatawan)..." class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs bg-white focus:outline-none focus:border-cyan-500">
+                                    <select id="proj-software" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs bg-white focus:outline-none focus:border-cyan-500">
+                                        <option value="">-- Pilih Software Utama --</option>
+                                        <option value="Adobe Photoshop">Adobe Photoshop</option>
+                                        <option value="Adobe Illustrator">Adobe Illustrator</option>
+                                        <option value="CorelDRAW">CorelDRAW</option>
+                                        <option value="Canva">Canva</option>
+                                    </select>
+                                    <button onclick="saveProjectBrief()" class="w-full py-2.5 rounded-xl bg-navy-900 hover:bg-navy-800 text-white text-xs font-bold transition">
+                                        <i class="fa-solid fa-floppy-disk mr-1.5"></i> Simpan Konsep Proyek
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- ==========================================
+         JAVASCRIPT APPLICATION LOGIC
+    ========================================== -->
+    <script>
+        /* ------------------------------------------
+           1. STATE & LOCAL STORAGE MANAGEMENT
+        ------------------------------------------ */
+        const STORAGE_KEY = 'mpi_dkv_xi_state_v4';
+
+        const defaultState = {
+            visitedPages: [],
+            completedBabs: [],
+            latihanAnswers: {}, // { qIndex: selectedOptionIndex }
+            evalScore: null,
+            projectBrief: { product: '', audience: '', software: '' },
+            student: {
+                nama: '',
+                kelas: ''
+            },
+            guru: {
+                nama: 'Anang Susilo Utomo,S.T.,Gr',
+                sekolah: 'SMK Negeri 1 Sorong'
+            }
+        };
+
+        let appState = loadState();
+
+        function loadState() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (!raw) return JSON.parse(JSON.stringify(defaultState));
+                const parsed = JSON.parse(raw);
+                return { ...JSON.parse(JSON.stringify(defaultState)), ...parsed };
+            } catch (e) {
+                return JSON.parse(JSON.stringify(defaultState));
+            }
+        }
+
+        function saveState() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+            } catch (e) {
+                console.warn('Gagal menyimpan ke LocalStorage', e);
+            }
+            updateProgressUI();
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const colors = {
+                success: 'bg-emerald-600 text-white',
+                error: 'bg-rose-600 text-white',
+                info: 'bg-navy-900 text-cyan-300 border border-cyan-500/40'
+            };
+            toast.className = `${colors[type] || colors.info} px-4 py-3 rounded-2xl shadow-xl text-xs sm:text-sm font-semibold flex items-center gap-2.5 animate-page pointer-events-auto`;
+            toast.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-circle-check' : type === 'error' ? 'fa-circle-exclamation' : 'fa-sparkles'}"></i><span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.3s';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function updateProgressUI() {
+            const trackablePages = ['tujuan', 'materi', 'simulasi', 'latihan', 'evaluasi'];
+            const visitedCount = trackablePages.filter(p => appState.visitedPages.includes(p)).length;
+            const babsCount = Math.min(appState.completedBabs.length, 5);
+            const latihanCount = Object.keys(appState.latihanAnswers).length;
+            const evalDone = appState.evalScore !== null ? 1 : 0;
+
+            const hasAnyActivity =
+                visitedCount > 0 ||
+                babsCount > 0 ||
+                latihanCount > 0 ||
+                evalDone > 0;
+
+            // Weighted progress calculation (Total 100%, starts strictly at 0%)
+            const pageWeight = (visitedCount / trackablePages.length) * 35;
+            const babWeight = (babsCount / 5) * 25;
+            const latihanWeight = (latihanCount / 10) * 20;
+            const evalWeight = evalDone * 20;
+
+            const totalPercent = !hasAnyActivity
+                ? 0
+                : Math.min(100, Math.round(pageWeight + babWeight + latihanWeight + evalWeight));
+
+            document.getElementById('sidebar-progress-bar').style.width = `${totalPercent}%`;
+            document.getElementById('sidebar-progress-text').textContent = `${totalPercent}%`;
+            document.getElementById('mobile-progress-text').textContent = `${totalPercent}%`;
+
+            const statusLabel = document.getElementById('progress-status-label');
+            if (totalPercent === 100) {
+                statusLabel.textContent = 'Luar biasa! Seluruh modul tuntas.';
+                statusLabel.className = 'text-[10px] text-emerald-400 font-semibold mt-1.5';
+            } else {
+                statusLabel.textContent = `Materi & aktivitas terselesaikan: ${totalPercent}%`;
+            }
+
+            // Update check icons in sidebar
+            document.querySelectorAll('.nav-check').forEach(icon => {
+                const page = icon.getAttribute('data-page');
+                const isDone = page === 'home'
+                    ? Boolean(appState.student && appState.student.nama)
+                    : appState.visitedPages.includes(page);
+
+                if (isDone) {
+                    icon.className = 'fa-solid fa-circle-check text-xs text-emerald-400 nav-check';
+                } else {
+                    icon.className = 'fa-regular fa-circle text-xs text-slate-600 nav-check';
+                }
+            });
+        }
+
+        function resetAllProgress() {
+            localStorage.removeItem(STORAGE_KEY);
+            appState = JSON.parse(JSON.stringify(defaultState));
+            saveState();
+            renderLatihan();
+            restartEvaluation();
+            renderIdentities();
+            navigateTo('home');
+            showToast('Seluruh progres belajar berhasil direset.', 'info');
+        }
+
+        /* ------------------------------------------
+           2. NAVIGATION & SIDEBAR CONTROLS
+        ------------------------------------------ */
+        function navigateTo(pageId) {
+            // Hide all sections
+            document.querySelectorAll('.page-section').forEach(sec => sec.classList.add('hidden'));
+            const targetSec = document.getElementById(`page-${pageId}`);
+            if (targetSec) {
+                targetSec.classList.remove('hidden');
+                targetSec.classList.remove('animate-page');
+                void targetSec.offsetWidth; // trigger reflow
+                targetSec.classList.add('animate-page');
+            }
+
+            // Update nav button active styles
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                const isTarget = btn.getAttribute('data-target') === pageId;
+                if (isTarget) {
+                    btn.className = 'nav-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-all bg-gradient-to-r from-cyan-500/20 to-purple-600/20 text-cyan-300 border border-cyan-500/30';
+                } else {
+                    btn.className = 'nav-btn w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium text-slate-300 hover:bg-navy-800 hover:text-white transition-all';
+                }
+            });
+
+            // Record visited page (excluding initial home landing)
+            if (pageId !== 'home' && !appState.visitedPages.includes(pageId)) {
+                appState.visitedPages.push(pageId);
+                saveState();
+            }
+
+            // Close mobile drawer if open
+            closeMobileSidebar();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.addEventListener('click', () => navigateTo(btn.getAttribute('data-target')));
+        });
+
+        const sidebar = document.getElementById('sidebar');
+        const backdrop = document.getElementById('sidebar-backdrop');
+
+        document.getElementById('mobile-menu-btn').addEventListener('click', () => {
+            sidebar.classList.remove('-translate-x-full');
+            backdrop.classList.remove('hidden');
+        });
+
+        function closeMobileSidebar() {
+            sidebar.classList.add('-translate-x-full');
+            backdrop.classList.add('hidden');
+        }
+
+        document.getElementById('close-sidebar-btn').addEventListener('click', closeMobileSidebar);
+        backdrop.addEventListener('click', closeMobileSidebar);
+
+        /* ------------------------------------------
+           3. MATERI PEMBELAJARAN (BAB 1 - 5)
+        ------------------------------------------ */
+        function switchBab(babNum) {
+            document.querySelectorAll('.bab-panel').forEach(p => p.classList.add('hidden'));
+            document.getElementById(`bab-content-${babNum}`).classList.remove('hidden');
+
+            document.querySelectorAll('.bab-tab-btn').forEach(btn => {
+                const isSelected = Number(btn.getAttribute('data-bab')) === babNum;
+                btn.className = isSelected
+                    ? 'bab-tab-btn shrink-0 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-navy-900 text-white shadow transition'
+                    : 'bab-tab-btn shrink-0 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-white text-slate-600 border border-slate-200 hover:bg-slate-100 transition';
+            });
+
+            if (!appState.completedBabs.includes(babNum)) {
+                appState.completedBabs.push(babNum);
+                saveState();
+            }
+        }
+
+        // Bab 3 Mini Zoom Canvas Setup
+        function initBab3Zoom() {
+            const canvas = document.getElementById('bab3-bitmap-canvas');
+            const ctx = canvas.getContext('2d');
+            // Draw crisp circle & triangle at low 64x64 resolution so zooming shows pixels
+            ctx.clearRect(0, 0, 64, 64);
+            const grad = ctx.createLinearGradient(0, 0, 64, 64);
+            grad.addColorStop(0, '#06b6d4');
+            grad.addColorStop(1, '#8b5cf6');
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(32, 32, 24, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.moveTo(32, 16);
+            ctx.lineTo(44, 44);
+            ctx.lineTo(20, 44);
+            ctx.closePath();
+            ctx.fill();
+
+            const slider = document.getElementById('bab3-zoom-slider');
+            const valLabel = document.getElementById('bab3-zoom-val');
+            const svgEl = document.getElementById('bab3-vector-svg');
+
+            slider.addEventListener('input', (e) => {
+                const z = parseFloat(e.target.value);
+                valLabel.textContent = `${z.toFixed(1)}x`;
+                canvas.style.transform = `scale(${z})`;
+                svgEl.style.transform = `scale(${z})`;
+            });
+        }
+
+        // Bab 4 Antarmuka Aplikasi Interactive Selector
+        const uiComponentsData = {
+            1: { title: 'Menu Bar', desc: 'Baris menu utama di bagian paling atas aplikasi (File, Edit, Object, Type, View, Window) untuk mengelola dokumen, menyimpan file, ekspor karya, dan membuka panel tersembunyi.' },
+            2: { title: 'Toolbar (Control Bar)', desc: 'Bilah opsi kontekstual di bawah Menu Bar yang berubah otomatis menyesuaikan tool yang sedang aktif (misalnya ukuran font, posisi koordinat X/Y, ketebalan garis, dan opacity).' },
+            3: { title: 'Toolbox', desc: 'Kumpulan ikon peralatan utama di sisi kiri layar seperti Selection Tool, Pen Tool, Brush Tool, Shape Tool, Type Tool, dan Zoom Tool untuk menggambar serta memodifikasi objek.' },
+            4: { title: 'Panel Warna (Color & Swatches)', desc: 'Panel untuk memilih, meracik, dan menerapkan warna isi (Fill) maupun warna garis tepi (Stroke) dalam mode warna RGB maupun CMYK.' },
+            5: { title: 'Panel Layer', desc: 'Susunan lapisan transparan bertumpuk yang memisahkan setiap elemen desain (teks, foto, latar belakang) agar mudah diatur urutan, dikunci, atau disembunyikan.' },
+            6: { title: 'Canvas atau Artboard', desc: 'Bidang kerja utama berwarna putih tempat desainer menyusun karya. Hanya objek yang berada di dalam area Canvas/Artboard yang akan ikut tercetak atau terekspor.' },
+            7: { title: 'Properties Panel', desc: 'Panel cerdas yang menampilkan detail atribut objek yang sedang dipilih seperti dimensi lebar/tinggi, sudut lengkung, perataan (align), dan efek bayangan.' },
+            8: { title: 'Workspace', desc: 'Keseluruhan tata letak ruang kerja aplikasi desain yang dapat disesuaikan (seperti preset Essentials, Typography, atau Painting) demi kenyamanan alur kerja desainer.' }
+        };
+
+        function selectUiPart(num) {
+            const item = uiComponentsData[num];
+            if (!item) return;
+            document.getElementById('ui-detail-badge').textContent = `Komponen #${num}`;
+            document.getElementById('ui-detail-title').textContent = item.title;
+            document.getElementById('ui-detail-desc').textContent = item.desc;
+
+            document.querySelectorAll('.ui-pill-btn').forEach(btn => {
+                const active = Number(btn.getAttribute('data-ui')) === num;
+                btn.className = active
+                    ? 'ui-pill-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-navy-900 text-white'
+                    : 'ui-pill-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100';
+            });
+        }
+
+        /* ------------------------------------------
+           4. SIMULASI INTERAKTIF (A, B, C, D)
+        ------------------------------------------ */
+        function switchSim(simNum) {
+            document.querySelectorAll('.sim-panel').forEach(p => p.classList.add('hidden'));
+            document.getElementById(`sim-panel-${simNum}`).classList.remove('hidden');
+
+            document.querySelectorAll('.sim-tab-btn').forEach(btn => {
+                const active = Number(btn.getAttribute('data-sim')) === simNum;
+                btn.className = active
+                    ? 'sim-tab-btn p-3.5 rounded-2xl text-left bg-navy-900 text-white shadow transition'
+                    : 'sim-tab-btn p-3.5 rounded-2xl text-left bg-white text-slate-700 border border-slate-200 hover:bg-slate-100 transition';
+            });
+        }
+
+        // --- SIMULASI A: BITMAP VS VEKTOR ---
+        let currentSimShape = 'star';
+
+        function drawSimGraphics(shape) {
+            const canvas = document.getElementById('sim-bitmap-canvas');
+            const ctx = canvas.getContext('2d');
+            const vecContainer = document.getElementById('sim-vector-container');
+            ctx.clearRect(0, 0, 48, 48);
+
+            if (shape === 'star') {
+                // Bitmap Star on 48x48 grid
+                ctx.fillStyle = '#06b6d4';
+                ctx.beginPath();
+                const cx = 24, cy = 24, spikes = 5, outerR = 19, innerR = 8;
+                for (let i = 0; i < spikes * 2; i++) {
+                    const r = i % 2 === 0 ? outerR : innerR;
+                    const angle = (i * Math.PI) / spikes - Math.PI / 2;
+                    const x = cx + Math.cos(angle) * r;
+                    const y = cy + Math.sin(angle) * r;
+                    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+                }
+                ctx.closePath();
+                ctx.fill();
+
+                vecContainer.innerHTML = `
+                <svg id="sim-vector-svg" viewBox="0 0 100 100" class="w-48 h-48 transition-transform duration-150">
+                    <polygon points="50,10 61,36 90,39 68,58 75,86 50,71 25,86 32,58 10,39 39,36" fill="#06b6d4"/>
+                </svg>`;
+            } else if (shape === 'logo') {
+                // Bitmap Camera Icon
+                ctx.fillStyle = '#a855f7';
+                ctx.fillRect(8, 15, 32, 22);
+                ctx.fillRect(17, 10, 14, 5);
+                ctx.fillStyle = '#0f172a';
+                ctx.beginPath();
+                ctx.arc(24, 26, 7, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#22d3ee';
+                ctx.beginPath();
+                ctx.arc(24, 26, 3.5, 0, Math.PI * 2);
+                ctx.fill();
+
+                vecContainer.innerHTML = `
+                <svg id="sim-vector-svg" viewBox="0 0 100 100" class="w-48 h-48 transition-transform duration-150">
+                    <rect x="16" y="30" width="68" height="46" rx="8" fill="#a855f7"/>
+                    <rect x="35" y="20" width="30" height="12" rx="4" fill="#a855f7"/>
+                    <circle cx="50" cy="53" r="15" fill="#0f172a"/>
+                    <circle cx="50" cy="53" r="7" fill="#22d3ee"/>
+                </svg>`;
+            } else {
+                // Bitmap Typography "DKV"
+                ctx.fillStyle = '#f59e0b';
+                ctx.font = 'bold 16px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('DKV', 24, 25);
+
+                vecContainer.innerHTML = `
+                <svg id="sim-vector-svg" viewBox="0 0 100 100" class="w-48 h-48 transition-transform duration-150">
+                    <text x="50" y="55" text-anchor="middle" fill="#f59e0b" font-family="Plus Jakarta Sans, sans-serif" font-weight="800" font-size="34">DKV</text>
+                </svg>`;
+            }
+
+            // Re-apply current zoom
+            const z = parseFloat(document.getElementById('sim-zoom-range').value);
+            canvas.style.transform = `scale(${z})`;
+            const svgEl = document.getElementById('sim-vector-svg');
+            if (svgEl) svgEl.style.transform = `scale(${z})`;
+        }
+
+        function setSimShape(shape) {
+            currentSimShape = shape;
+            document.querySelectorAll('.sim-shape-btn').forEach(btn => {
+                const active = btn.getAttribute('data-shape') === shape;
+                btn.className = active
+                    ? 'sim-shape-btn px-3.5 py-2 rounded-xl text-xs font-bold bg-cyan-600 text-white'
+                    : 'sim-shape-btn px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200';
+            });
+            drawSimGraphics(shape);
+        }
+
+        function initSimZoom() {
+            drawSimGraphics('star');
+            const range = document.getElementById('sim-zoom-range');
+            const badge = document.getElementById('sim-zoom-badge');
+            const bitNote = document.getElementById('sim-bitmap-note');
+
+            range.addEventListener('input', (e) => {
+                const z = parseFloat(e.target.value);
+                badge.textContent = `${Math.round(z * 100)}%`;
+                const canvas = document.getElementById('sim-bitmap-canvas');
+                const svgEl = document.getElementById('sim-vector-svg');
+                canvas.style.transform = `scale(${z})`;
+                if (svgEl) svgEl.style.transform = `scale(${z})`;
+
+                if (z >= 4) {
+                    bitNote.textContent = `Zoom ${Math.round(z * 100)}%: Kotak-kotak piksel terlihat jelas dan tepi menjadi bergerigi!`;
+                } else {
+                    bitNote.textContent = 'Geser zoom lebih besar untuk melihat batas piksel gambar bitmap.';
+                }
+            });
+        }
+
+        // --- SIMULASI B: TEBAK SOFTWARE ---
+        const tebakItems = [
+            {
+                title: 'Manipulasi Foto Surreal & Retouching Kulit Model',
+                desc: 'Karya menggabungkan 5 foto berbeda dengan penyesuaian pencahayaan, bayangan halus, dan koreksi warna piksel.',
+                icon: 'fa-wand-magic-sparkles',
+                color: 'from-sky-500 to-blue-700',
+                answer: 'Adobe Photoshop',
+                options: ['Adobe Photoshop', 'Adobe InDesign', 'Figma', 'CorelDRAW'],
+                reason: 'Tepat! Adobe Photoshop adalah standar industri untuk manipulasi foto dan pengeditan gambar berbasis bitmap/piksel.'
+            },
+            {
+                title: 'Logo Geometri Minimalis & Maskot Brand Kopi',
+                desc: 'Identitas visual merek yang membutuhkan garis lengkung mulus agar dapat dicetak di gelas kecil hingga papan reklame.',
+                icon: 'fa-bezier-curve',
+                color: 'from-amber-500 to-orange-700',
+                answer: 'Adobe Illustrator',
+                options: ['Adobe Photoshop', 'Adobe Illustrator', 'Canva', 'Adobe InDesign'],
+                reason: 'Benar! Adobe Illustrator menghasilkan karya berbasis vektor sehingga logo tajam di segala ukuran.'
+            },
+            {
+                title: 'Prototipe Aplikasi Pemesanan Tiket Wisata Mobile',
+                desc: 'Rancangan 12 layar aplikasi smartphone lengkap dengan tombol navigasi yang dapat diklik untuk uji coba pengguna.',
+                icon: 'fa-mobile-screen-button',
+                color: 'from-purple-500 to-indigo-700',
+                answer: 'Figma',
+                options: ['CorelDRAW', 'Adobe Photoshop', 'Figma', 'Adobe InDesign'],
+                reason: 'Mantap! Figma dirancang khusus untuk desain antarmuka UI/UX dan pembuatan prototipe interaktif.'
+            },
+            {
+                title: 'Majalah Sekolah 48 Halaman & Katalog Produk',
+                desc: 'Publikasi cetak banyak halaman yang membutuhkan pengaturan kolom paragraf rapi dan penomoran halaman otomatis.',
+                icon: 'fa-book-open',
+                color: 'from-rose-500 to-pink-700',
+                answer: 'Adobe InDesign',
+                options: ['Adobe InDesign', 'Adobe Photoshop', 'Figma', 'Canva'],
+                reason: 'Tepat sekali! Adobe InDesign unggul untuk tata letak publikasi multi-halaman seperti majalah dan buku.'
+            }
+        ];
+        let tebakIdx = 0;
+
+        function renderTebak() {
+            const item = tebakItems[tebakIdx];
+            document.getElementById('tebak-counter').textContent = `Studi Karya ${tebakIdx + 1} / ${tebakItems.length}`;
+            document.getElementById('tebak-visual').innerHTML = `
+                <div class="w-20 h-20 rounded-3xl bg-gradient-to-br ${item.color} flex items-center justify-center text-3xl text-white shadow-lg mb-4">
+                    <i class="fa-solid ${item.icon}"></i>
+                </div>
+                <span class="text-xs uppercase tracking-widest text-cyan-300 font-bold">Sampel Karya DKV</span>
+                <p class="font-display font-bold text-base mt-1">${item.title}</p>
+            `;
+            document.getElementById('tebak-title').textContent = item.title;
+            document.getElementById('tebak-desc').textContent = item.desc;
+
+            const fb = document.getElementById('tebak-feedback');
+            fb.classList.add('hidden');
+            document.getElementById('tebak-next-btn').classList.add('hidden');
+
+            const optContainer = document.getElementById('tebak-options');
+            optContainer.innerHTML = item.options.map(opt => `
+                <button onclick="checkTebak('${opt}')" class="tebak-opt-btn p-3.5 rounded-xl border-2 border-slate-200 hover:border-cyan-500 bg-white text-left font-bold text-xs sm:text-sm text-navy-900 transition flex items-center justify-between">
+                    <span>${opt}</span>
+                    <i class="fa-solid fa-chevron-right text-slate-300 text-xs"></i>
+                </button>
+            `).join('');
+        }
+
+        function checkTebak(selected) {
+            const item = tebakItems[tebakIdx];
+            const fb = document.getElementById('tebak-feedback');
+            fb.classList.remove('hidden');
+
+            if (selected === item.answer) {
+                fb.className = 'p-4 rounded-2xl text-xs sm:text-sm font-medium bg-emerald-50 border border-emerald-300 text-emerald-800';
+                fb.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600 mr-1.5"></i> <strong>Benar!</strong> ${item.reason}`;
+            } else {
+                fb.className = 'p-4 rounded-2xl text-xs sm:text-sm font-medium bg-rose-50 border border-rose-300 text-rose-800';
+                fb.innerHTML = `<i class="fa-solid fa-circle-xmark text-rose-600 mr-1.5"></i> <strong>Kurang Tepat.</strong> Jawaban yang sesuai adalah <strong>${item.answer}</strong>. ${item.reason}`;
+            }
+
+            document.querySelectorAll('.tebak-opt-btn').forEach(btn => {
+                btn.disabled = true;
+                if (btn.textContent.trim() === item.answer) {
+                    btn.classList.add('border-emerald-500', 'bg-emerald-50');
+                }
+            });
+            document.getElementById('tebak-next-btn').classList.remove('hidden');
+        }
+
+        function nextTebak() {
+            tebakIdx = (tebakIdx + 1) % tebakItems.length;
+            renderTebak();
+        }
+
+        // --- SIMULASI C: DRAG & DROP / TAP MATCHING ---
+        const dndPairs = [
+            { id: 'ps', software: 'Adobe Photoshop', targetDesc: 'Mengolah foto bitmap, retouching, dan manipulasi gambar berbasis piksel.' },
+            { id: 'ai', software: 'Adobe Illustrator', targetDesc: 'Membuat logo, ikon, dan ilustrasi vektor dengan kurva matematis presisi.' },
+            { id: 'id', software: 'Adobe InDesign', targetDesc: 'Menyusun tata letak majalah, buku, dan publikasi cetak banyak halaman.' },
+            { id: 'fg', software: 'Figma', targetDesc: 'Merancang antarmuka aplikasi mobile/web (UI/UX) dan prototipe interaktif.' }
+        ];
+        let selectedTouchSoftware = null;
+        let matchedCount = 0;
+
+        function initDragDropGame() {
+            matchedCount = 0;
+            selectedTouchSoftware = null;
+            const fb = document.getElementById('dnd-feedback');
+            fb.classList.add('hidden');
+
+            const shuffled = [...dndPairs].sort(() => Math.random() - 0.5);
+            const pool = document.getElementById('drag-items-pool');
+            pool.innerHTML = shuffled.map(p => `
+                <div id="drag-pill-${p.id}" draggable="true" ondragstart="handleDragStart(event, '${p.id}')" onclick="handleTapSoftware('${p.id}')" class="draggable-item px-4 py-2.5 rounded-xl bg-navy-900 text-cyan-300 font-bold text-xs sm:text-sm shadow flex items-center gap-2 border-2 border-transparent select-none">
+                    <i class="fa-solid fa-grip-vertical text-slate-500"></i>
+                    <span>${p.software}</span>
+                </div>
+            `).join('');
+
+            const zones = document.getElementById('drop-zones-grid');
+            zones.innerHTML = dndPairs.map(p => `
+                <div id="drop-zone-${p.id}" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, '${p.id}')" onclick="handleTapZone('${p.id}')" class="drop-zone p-4 rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50/70 flex flex-col justify-between min-h-[115px] cursor-pointer">
+                    <p class="text-xs sm:text-sm text-slate-700 font-medium">${p.targetDesc}</p>
+                    <div id="drop-slot-${p.id}" class="mt-3 pt-2 border-t border-slate-200 text-xs text-slate-400 italic">
+                        Letakkan kartu software di sini...
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function handleDragStart(e, id) {
+            e.dataTransfer.setData('text/plain', id);
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('drag-over');
+        }
+
+        function handleDragLeave(e) {
+            e.currentTarget.classList.remove('drag-over');
+        }
+
+        function handleDrop(e, zoneId) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('drag-over');
+            const draggedId = e.dataTransfer.getData('text/plain');
+            verifyMatch(draggedId, zoneId);
+        }
+
+        // Touch / Click fallback for mobile accessibility
+        function handleTapSoftware(id) {
+            selectedTouchSoftware = id;
+            document.querySelectorAll('.draggable-item').forEach(el => el.classList.remove('border-cyan-400', 'ring-2', 'ring-cyan-400'));
+            const pill = document.getElementById(`drag-pill-${id}`);
+            if (pill) pill.classList.add('border-cyan-400', 'ring-2', 'ring-cyan-400');
+        }
+
+        function handleTapZone(zoneId) {
+            if (!selectedTouchSoftware) return;
+            verifyMatch(selectedTouchSoftware, zoneId);
+            selectedTouchSoftware = null;
+        }
+
+        function verifyMatch(softwareId, zoneId) {
+            if (softwareId === zoneId) {
+                const pair = dndPairs.find(p => p.id === softwareId);
+                const pill = document.getElementById(`drag-pill-${softwareId}`);
+                if (pill) pill.remove();
+
+                const zone = document.getElementById(`drop-zone-${zoneId}`);
+                zone.className = 'p-4 rounded-2xl border-2 border-emerald-400 bg-emerald-50/70 flex flex-col justify-between min-h-[115px]';
+                document.getElementById(`drop-slot-${zoneId}`).innerHTML = `
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-600 text-white font-bold text-xs not-italic">
+                        <i class="fa-solid fa-check"></i> ${pair.software}
+                    </span>
+                `;
+                matchedCount++;
+                showToast(`Cocok! ${pair.software} berhasil dipasangkan.`, 'success');
+
+                if (matchedCount === dndPairs.length) {
+                    const fb = document.getElementById('dnd-feedback');
+                    fb.className = 'mt-5 p-4 rounded-2xl text-sm font-bold text-center bg-emerald-100 text-emerald-800 border border-emerald-300';
+                    fb.innerHTML = '<i class="fa-solid fa-trophy text-amber-500 mr-2"></i> Hebat! Semua perangkat lunak berhasil dicocokkan dengan fungsinya.';
+                }
+            } else {
+                showToast('Belum sesuai. Coba perhatikan kembali fungsi software tersebut!', 'error');
+            }
+        }
+
+        // --- SIMULASI D: PILIH SOFTWARE YANG TEPAT ---
+        const caseStudies = [
+            {
+                id: 'cs1',
+                scenario: 'Kasus 1: UMKM Keripik Pisang Sorong meminta dibuatkan desain logo merek yang tajam dan tidak pecah saat dicetak di stiker kecil maupun spanduk toko.',
+                options: ['Adobe Photoshop', 'Adobe Illustrator', 'Adobe InDesign'],
+                correct: 'Adobe Illustrator',
+                explanation: 'Logo wajib dibuat dengan software berbasis vektor seperti Adobe Illustrator (atau CorelDRAW) agar resolusinya tidak terbatas.'
+            },
+            {
+                id: 'cs2',
+                scenario: 'Kasus 2: Sebuah agensi iklan meminta kamu memperbaiki pencahayaan foto produk minuman dingin dan menambahkan efek percikan air yang realistis.',
+                options: ['Adobe Photoshop', 'Figma', 'Adobe InDesign'],
+                correct: 'Adobe Photoshop',
+                explanation: 'Adobe Photoshop memiliki fitur koreksi warna, layer mask, dan kuas manipulasi foto piksel terbaik untuk efek realistis.'
+            },
+            {
+                id: 'cs3',
+                scenario: 'Kasus 3: Tim startup digital membutuhkan desain tampilan antarmuka (UI) aplikasi pemesanan tiket kapal lengkap dengan alur klik prototipe.',
+                options: ['CorelDRAW', 'Figma', 'Adobe Photoshop'],
+                correct: 'Figma',
+                explanation: 'Figma adalah standar industri untuk desain UI/UX karena mendukung Auto Layout, komponen interaktif, dan kolaborasi cloud.'
+            }
+        ];
+
+        function renderCaseStudies() {
+            const container = document.getElementById('case-study-list');
+            container.innerHTML = caseStudies.map(cs => `
+                <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                    <p class="font-semibold text-navy-900 text-sm">${cs.scenario}</p>
+                    <div class="flex flex-wrap gap-2">
+                        ${cs.options.map(opt => `
+                            <button onclick="checkCaseStudy('${cs.id}', '${opt}')" class="px-4 py-2 rounded-xl bg-white hover:bg-cyan-50 border border-slate-300 hover:border-cyan-500 text-xs font-bold text-slate-700 transition">
+                                ${opt}
+                            </button>
+                        `).join('')}
+                    </div>
+                    <div id="cs-fb-${cs.id}" class="hidden p-3 rounded-xl text-xs font-medium"></div>
+                </div>
+            `).join('');
+        }
+
+        function checkCaseStudy(csId, chosen) {
+            const cs = caseStudies.find(c => c.id === csId);
+            const fb = document.getElementById(`cs-fb-${csId}`);
+            fb.classList.remove('hidden');
+            if (chosen === cs.correct) {
+                fb.className = 'p-3 rounded-xl text-xs font-medium bg-emerald-100 text-emerald-900 border border-emerald-300';
+                fb.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600 mr-1"></i> <strong>Pilihan Tepat!</strong> ${cs.explanation}`;
+            } else {
+                fb.className = 'p-3 rounded-xl text-xs font-medium bg-rose-100 text-rose-900 border border-rose-300';
+                fb.innerHTML = `<i class="fa-solid fa-circle-xmark text-rose-600 mr-1"></i> <strong>Kurang Efektif.</strong> Lebih tepat menggunakan <strong>${cs.correct}</strong>. ${cs.explanation}`;
+            }
+        }
+
+        /* ------------------------------------------
+           6. LATIHAN SOAL (10 SOAL + PEMBAHASAN)
+        ------------------------------------------ */
+        const latihanData = [
+            {
+                q: '1. Program komputer yang digunakan untuk menciptakan, mengolah, dan memanipulasi elemen visual digital maupun cetak disebut...',
+                opts: ['Sistem Operasi Jaringan', 'Perangkat Lunak Desain', 'Perangkat Keras Input', 'Basis Data Relasional'],
+                ans: 1,
+                exp: 'Perangkat lunak desain (design software) adalah aplikasi khusus untuk memproduksi karya komunikasi visual digital maupun cetak.'
+            },
+            {
+                q: '2. Fungsi utama perangkat lunak desain dalam industri kreatif DKV adalah...',
+                opts: ['Menghitung laporan keuangan perusahaan', 'Mempercepat visualisasi ide kreatif dengan presisi tinggi', 'Menggantikan fungsi mesin cetak offset', 'Menyimpan cadangan sistem operasi komputer'],
+                ans: 1,
+                exp: 'Software desain membantu desainer menerjemahkan gagasan visual secara cepat, presisi, dan mudah direvisi.'
+            },
+            {
+                q: '3. Perbedaan mendasar antara gambar bitmap dan vektor ketika diperbesar berkali-kali adalah...',
+                opts: ['Gambar bitmap tetap tajam, sedangkan vektor pecah', 'Gambar vektor berubah warna menjadi hitam putih', 'Gambar bitmap tampak kotak-kotak (pixelated), sedangkan vektor tetap halus', 'Keduanya mengalami penurunan resolusi yang sama'],
+                ans: 2,
+                exp: 'Bitmap tersusun dari piksel tetap sehingga pecah saat diperbesar, sedangkan vektor dihitung dengan rumus matematis sehingga selalu tajam.'
+            },
+            {
+                q: '4. Perangkat lunak yang paling tepat digunakan untuk retouching foto model dan manipulasi gambar berbasis piksel adalah...',
+                opts: ['Adobe InDesign', 'Adobe Photoshop', 'Figma', 'CorelDRAW'],
+                ans: 1,
+                exp: 'Adobe Photoshop merupakan perangkat lunak pengolah gambar bitmap/foto yang unggul dalam retouching dan manipulasi piksel.'
+            },
+            {
+                q: '5. Keunggulan utama Adobe Illustrator dalam pembuatan identitas merek (logo) adalah...',
+                opts: ['Memiliki fitur Pen Tool dan kurva vektor presisi yang tidak pecah di berbagai ukuran', 'Hanya mendukung format file JPG beresolusi rendah', 'Dikhususkan untuk mengedit video berdurasi panjang', 'Menggunakan sistem piksel tetap seperti kamera digital'],
+                ans: 0,
+                exp: 'Adobe Illustrator berbasis vektor sehingga logo yang dibuat tetap tajam saat dicetak pada kartu nama maupun baliho besar.'
+            },
+            {
+                q: '6. Aplikasi desain vektor yang sangat populer di usaha percetakan Indonesia untuk membuat spanduk, undangan, dan pola kemasan adalah...',
+                opts: ['CorelDRAW', 'Adobe Lightroom', 'Audacity', 'Blender'],
+                ans: 0,
+                exp: 'CorelDRAW banyak digunakan di industri percetakan karena kemudahan mengatur ukuran bidang cetak besar dan kurva vektor.'
+            },
+            {
+                q: '7. Seorang desainer diminta menyusun tata letak majalah sekolah setebal 60 halaman. Perangkat lunak paling efektif untuk proyek ini adalah...',
+                opts: ['Adobe Photoshop', 'Adobe InDesign', 'Paint', 'Adobe After Effects'],
+                ans: 1,
+                exp: 'Adobe InDesign dirancang khusus untuk tata letak publikasi multi-halaman seperti majalah, buku, dan katalog.'
+            },
+            {
+                q: '8. Perangkat lunak berbasis cloud yang menjadi standar industri untuk merancang antarmuka aplikasi mobile (UI/UX) dan prototipe interaktif adalah...',
+                opts: ['Adobe InDesign', 'Figma', 'Corel Photo-Paint', 'WinRAR'],
+                ans: 1,
+                exp: 'Figma memungkinkan perancangan tampilan UI aplikasi/website serta simulasi prototipe interaktif secara kolaboratif.'
+            },
+            {
+                q: '9. Manakah kelompok ekstensi file berikut yang seluruhnya merupakan format file berbasis VEKTOR?',
+                opts: ['JPG, PNG, PSD', 'SVG, AI, CDR', 'MP4, AVI, MKV', 'BMP, GIF, TIFF'],
+                ans: 1,
+                exp: 'SVG (Scalable Vector Graphics), AI (Adobe Illustrator), dan CDR (CorelDRAW) adalah format standar grafis vektor.'
+            },
+            {
+                q: '10. Klien membutuhkan konten promosi Instagram secara cepat menggunakan template siap pakai. Aplikasi yang paling praktis dipilih adalah...',
+                opts: ['Canva', 'AutoCAD', 'Adobe Premiere Pro', 'Notepad++'],
+                ans: 0,
+                exp: 'Canva menyediakan ribuan template grafis siap pakai yang sangat efisien untuk produksi konten media sosial secara cepat.'
+            }
+        ];
+
+        function renderLatihan() {
+            const container = document.getElementById('latihan-questions-container');
+            let correctTotal = 0;
+
+            container.innerHTML = latihanData.map((item, qIdx) => {
+                const userAns = appState.latihanAnswers[qIdx];
+                const isAnswered = userAns !== undefined;
+                if (isAnswered && userAns === item.ans) correctTotal++;
+
+                return `
+                <div class="bg-white rounded-3xl p-5 sm:p-6 border ${isAnswered ? (userAns === item.ans ? 'border-emerald-300' : 'border-rose-300') : 'border-slate-200'} shadow-sm">
+                    <p class="font-bold text-navy-900 text-sm sm:text-base mb-4">${item.q}</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        ${item.opts.map((opt, oIdx) => {
+                            const letters = ['A', 'B', 'C', 'D'];
+                            let btnStyle = 'border-slate-200 bg-slate-50/70 hover:bg-cyan-50 hover:border-cyan-400 text-slate-700';
+                            if (isAnswered) {
+                                if (oIdx === item.ans) {
+                                    btnStyle = 'border-emerald-500 bg-emerald-50 text-emerald-900 font-bold';
+                                } else if (oIdx === userAns) {
+                                    btnStyle = 'border-rose-500 bg-rose-50 text-rose-900 font-bold';
+                                } else {
+                                    btnStyle = 'border-slate-200 bg-white text-slate-400 opacity-70';
+                                }
+                            }
+                            return `
+                            <button onclick="answerLatihan(${qIdx}, ${oIdx})" ${isAnswered ? 'disabled' : ''} class="p-3.5 rounded-xl border-2 text-left text-xs sm:text-sm transition flex items-start gap-2.5 ${btnStyle}">
+                                <span class="w-6 h-6 rounded-lg bg-white border border-slate-200 flex items-center justify-center font-bold text-xs shrink-0">${letters[oIdx]}</span>
+                                <span class="pt-0.5">${opt}</span>
+                            </button>
+                            `;
+                        }).join('')}
+                    </div>
+
+                    ${isAnswered ? `
+                        <div class="mt-4 p-3.5 rounded-2xl text-xs sm:text-sm ${userAns === item.ans ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-amber-50 text-amber-900 border border-amber-200'}">
+                            <strong>${userAns === item.ans ? '<i class="fa-solid fa-circle-check text-emerald-600 mr-1"></i> Jawaban Benar!' : '<i class="fa-solid fa-circle-info text-amber-600 mr-1"></i> Pembahasan:'}</strong> ${item.exp}
+                        </div>
+                    ` : ''}
+                </div>
+                `;
+            }).join('');
+
+            document.getElementById('latihan-score-badge').textContent = `${correctTotal} / 10`;
+        }
+
+        function answerLatihan(qIdx, oIdx) {
+            appState.latihanAnswers[qIdx] = oIdx;
+            saveState();
+            renderLatihan();
+        }
+
+        function resetLatihan() {
+            appState.latihanAnswers = {};
+            saveState();
+            renderLatihan();
+            showToast('Latihan soal telah diulang dari awal.', 'info');
+        }
+
+        /* ------------------------------------------
+           7. EVALUASI PEMBELAJARAN (15 SOAL) & PROYEK
+        ------------------------------------------ */
+        const evalQuestions = [
+            { q: 'Perangkat lunak desain yang bekerja berdasarkan susunan titik-titik warna (piksel) dalam grid disebut perangkat lunak berbasis...', opts: ['Vektor', 'Bitmap (Raster)', 'Kurva Bezier', 'Tipografi'], ans: 1 },
+            { q: 'Format file asli (mentah) yang menyimpan seluruh informasi layer pada aplikasi Adobe Photoshop adalah...', opts: ['.CDR', '.PSD', '.SVG', '.AI'], ans: 1 },
+            { q: 'Jika sebuah logo perusahaan dibuat menggunakan grafik bitmap beresolusi 72 dpi lalu dicetak pada baliho berukuran 4x6 meter, dampak yang terjadi adalah...', opts: ['Warna logo menjadi transparan', 'Logo terlihat pecah dan bergerigi (pixelated)', 'Ukuran file otomatis mengecil', 'Logo berubah menjadi gambar vektor'], ans: 1 },
+            { q: 'Komponen antarmuka aplikasi desain yang berfungsi menampung ikon alat gambar seperti Pen Tool, Selection Tool, dan Type Tool adalah...', opts: ['Menu Bar', 'Toolbox', 'Status Bar', 'Navigator'], ans: 1 },
+            { q: 'Fitur pada perangkat lunak desain yang memungkinkan desainer menumpuk elemen teks, foto, dan bentuk secara terpisah agar mudah diedit disebut...', opts: ['Swatches', 'Layer', 'Artboard', 'Ruler'], ans: 1 },
+            { q: 'Aplikasi desain yang paling direkomendasikan untuk menyusun tata letak buku tahunan sekolah dan majalah cetak adalah...', opts: ['Adobe InDesign', 'Adobe Photoshop', 'Figma', 'Canva'], ans: 0 },
+            { q: 'Perbedaan utama antara Adobe Illustrator dan Adobe Photoshop terletak pada...', opts: ['Illustrator berbasis vektor, sedangkan Photoshop berbasis bitmap', 'Illustrator hanya untuk Mac, Photoshop hanya untuk Windows', 'Illustrator tidak memiliki panel warna, Photoshop memilikinya', 'Illustrator untuk edit video, Photoshop untuk audio'], ans: 0 },
+            { q: 'Format file vektor standar web yang dapat dibuka di browser maupun diedit kembali di Illustrator/CorelDRAW adalah...', opts: ['JPG', 'PNG', 'SVG', 'BMP'], ans: 2 },
+            { q: 'Sebuah tim desainer UI/UX ingin membuat wireframe dan prototipe aplikasi smartphone secara kolaboratif online. Aplikasi terbaik untuk kebutuhan ini adalah...', opts: ['CorelDRAW', 'Figma', 'Adobe InDesign', 'Paint'], ans: 1 },
+            { q: 'Format file bitmap yang mendukung latar belakang transparan (alpha channel) sehingga cocok untuk aset desain digital adalah...', opts: ['JPG', 'PNG', 'CDR', 'DOCX'], ans: 1 },
+            { q: 'Area kerja berwarna putih tempat objek desain disusun dan menjadi batas area hasil ekspor/cetak disebut...', opts: ['Toolbox', 'Canvas / Artboard', 'Menu Bar', 'Properties Panel'], ans: 1 },
+            { q: 'Dalam proyek pembuatan kemasan produk kotak makanan (packaging), desainer membutuhkan garis potong (dieline) yang presisi. Software yang paling sesuai adalah...', opts: ['CorelDRAW atau Adobe Illustrator', 'Adobe Lightroom', 'Windows Media Player', 'Notepad'], ans: 0 },
+            { q: 'Kelebihan utama perangkat lunak Canva bagi pelaku UMKM atau pembuat konten media sosial adalah...', opts: ['Mampu merender animasi 3D film bioskop', 'Menyediakan ribuan template siap pakai yang cepat diedit', 'Dapat menggantikan fungsi kamera DSLR', 'Hanya dapat dijalankan tanpa koneksi internet'], ans: 1 },
+            { q: 'Mode warna standar yang digunakan pada perangkat lunak desain ketika karya ditujukan untuk dicetak di mesin percetakan adalah...', opts: ['RGB (Red, Green, Blue)', 'CMYK (Cyan, Magenta, Yellow, Key/Black)', 'HSB', 'Grayscale'], ans: 1 },
+            { q: 'Langkah terakhir setelah menyelesaikan desain poster di aplikasi grafis agar mudah dibagikan melalui media sosial dan dilihat di semua perangkat adalah...', opts: ['Menghapus seluruh layer', 'Mengekspor karya ke format JPG atau PNG', 'Mengubah ukuran kanvas menjadi 1 piksel', 'Menutup aplikasi tanpa menyimpan'], ans: 1 }
+        ];
+
+        let currentEvalIdx = 0;
+        let evalUserAnswers = new Array(evalQuestions.length).fill(null);
+
+        function renderEvalQuestion() {
+            const total = evalQuestions.length;
+            const item = evalQuestions[currentEvalIdx];
+
+            document.getElementById('eval-q-indicator').textContent = `Soal ${currentEvalIdx + 1} dari ${total}`;
+            const answeredCount = evalUserAnswers.filter(a => a !== null).length;
+            document.getElementById('eval-answered-count').textContent = answeredCount;
+
+            // Render number pills
+            const pillsContainer = document.getElementById('eval-number-pills');
+            pillsContainer.innerHTML = evalQuestions.map((_, idx) => {
+                const isCurrent = idx === currentEvalIdx;
+                const isAnswered = evalUserAnswers[idx] !== null;
+                let cls = 'w-8 h-8 rounded-lg text-xs font-bold transition ';
+                if (isCurrent) cls += 'bg-cyan-500 text-navy-900 ring-2 ring-cyan-300';
+                else if (isAnswered) cls += 'bg-navy-900 text-white';
+                else cls += 'bg-slate-100 text-slate-600 hover:bg-slate-200';
+                return `<button onclick="jumpEvalQuestion(${idx})" class="${cls}">${idx + 1}</button>`;
+            }).join('');
+
+            // Question text & options
+            document.getElementById('eval-question-text').textContent = `${currentEvalIdx + 1}. ${item.q}`;
+            const letters = ['A', 'B', 'C', 'D'];
+            document.getElementById('eval-options-list').innerHTML = item.opts.map((opt, oIdx) => {
+                const selected = evalUserAnswers[currentEvalIdx] === oIdx;
+                return `
+                <button onclick="selectEvalOption(${oIdx})" class="w-full p-4 rounded-2xl border-2 text-left text-xs sm:text-sm transition flex items-center gap-3 ${selected ? 'border-cyan-500 bg-cyan-50 text-navy-900 font-bold shadow-sm' : 'border-slate-200 bg-white hover:border-slate-300 text-slate-700'}">
+                    <span class="w-7 h-7 rounded-xl ${selected ? 'bg-cyan-500 text-navy-900' : 'bg-slate-100 text-slate-600'} font-bold flex items-center justify-center text-xs shrink-0">${letters[oIdx]}</span>
+                    <span>${opt}</span>
+                </button>
+                `;
+            }).join('');
+
+            // Prev / Next / Submit visibility
+            document.getElementById('eval-prev-btn').disabled = currentEvalIdx === 0;
+            if (currentEvalIdx === total - 1) {
+                document.getElementById('eval-next-btn').classList.add('hidden');
+                document.getElementById('eval-submit-btn').classList.remove('hidden');
+            } else {
+                document.getElementById('eval-next-btn').classList.remove('hidden');
+                document.getElementById('eval-submit-btn').classList.add('hidden');
+            }
+        }
+
+        function selectEvalOption(oIdx) {
+            evalUserAnswers[currentEvalIdx] = oIdx;
+            renderEvalQuestion();
+        }
+
+        function jumpEvalQuestion(idx) {
+            currentEvalIdx = idx;
+            renderEvalQuestion();
+        }
+
+        function prevEvalQuestion() {
+            if (currentEvalIdx > 0) {
+                currentEvalIdx--;
+                renderEvalQuestion();
+            }
+        }
+
+        function nextEvalQuestion() {
+            if (currentEvalIdx < evalQuestions.length - 1) {
+                currentEvalIdx++;
+                renderEvalQuestion();
+            }
+        }
+
+        function submitEvaluation() {
+            const unanswered = evalUserAnswers.filter(a => a === null).length;
+            if (unanswered > 0) {
+                showToast(`Masih ada ${unanswered} soal yang belum dijawab. Lengkapi terlebih dahulu!`, 'error');
+                const firstEmpty = evalUserAnswers.findIndex(a => a === null);
+                if (firstEmpty !== -1) jumpEvalQuestion(firstEmpty);
+                return;
+            }
+
+            let correctCount = 0;
+            evalQuestions.forEach((q, idx) => {
+                if (evalUserAnswers[idx] === q.ans) correctCount++;
+            });
+
+            // Formula: (jumlah jawaban benar / jumlah seluruh soal) * 100
+            const score = Math.round((correctCount / evalQuestions.length) * 100);
+            appState.evalScore = score;
+            saveState();
+
+            document.getElementById('eval-active-screen').classList.add('hidden');
+            document.getElementById('eval-result-screen').classList.remove('hidden');
+
+            document.getElementById('eval-final-score').textContent = score;
+            document.getElementById('eval-correct-summary').textContent = `Jumlah Jawaban Benar: ${correctCount} dari ${evalQuestions.length} soal`;
+            const sName = appState.student?.nama || 'Peserta Didik';
+            const sClass = appState.student?.kelas ? ` (${appState.student.kelas})` : '';
+            document.getElementById('eval-student-result-info').textContent = `Peserta Didik: ${sName}${sClass}`;
+
+            const badge = document.getElementById('eval-predicate-badge');
+            if (score >= 90) {
+                badge.textContent = 'Predikat: Sangat Kompeten (Istimewa) — Siap Praktik Industri!';
+            } else if (score >= 75) {
+                badge.textContent = 'Predikat: Kompeten (Baik) — Memenuhi Kriteria Ketuntasan!';
+            } else if (score >= 60) {
+                badge.textContent = 'Predikat: Cukup — Pelajari Kembali Beberapa Materi!';
+            } else {
+                badge.textContent = 'Predikat: Perlu Bimbingan — Silakan Ulangi Materi & Evaluasi!';
+            }
+
+            // Render feedback review
+            const letters = ['A', 'B', 'C', 'D'];
+            document.getElementById('eval-review-list').innerHTML = evalQuestions.map((q, idx) => {
+                const userChoice = evalUserAnswers[idx];
+                const isCorrect = userChoice === q.ans;
+                return `
+                <div class="p-4 rounded-2xl border ${isCorrect ? 'border-emerald-200 bg-emerald-50/50' : 'border-rose-200 bg-rose-50/50'} text-xs sm:text-sm">
+                    <div class="flex items-start justify-between gap-2">
+                        <p class="font-bold text-navy-900">${idx + 1}. ${q.q}</p>
+                        <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold shrink-0 ${isCorrect ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'}">
+                            ${isCorrect ? 'Benar' : 'Salah'}
+                        </span>
+                    </div>
+                    <p class="mt-2 text-slate-700">Jawaban Kamu: <strong>${letters[userChoice]}. ${q.opts[userChoice]}</strong></p>
+                    ${!isCorrect ? `<p class="mt-1 text-emerald-700 font-semibold">Kunci Jawaban: ${letters[q.ans]}. ${q.opts[q.ans]}</p>` : ''}
+                </div>
+                `;
+            }).join('');
+
+            showToast(`Evaluasi selesai! Nilai akhir kamu: ${score}`, 'success');
+        }
+
+        function restartEvaluation() {
+            currentEvalIdx = 0;
+            evalUserAnswers = new Array(evalQuestions.length).fill(null);
+            document.getElementById('eval-result-screen').classList.add('hidden');
+            document.getElementById('eval-active-screen').classList.remove('hidden');
+            renderEvalQuestion();
+        }
+
+        function switchEvalMode(mode) {
+            const kuisWrap = document.getElementById('eval-kuis-wrapper');
+            const proyekWrap = document.getElementById('eval-proyek-wrapper');
+            const btnKuis = document.getElementById('btn-mode-kuis');
+            const btnProyek = document.getElementById('btn-mode-proyek');
+
+            if (mode === 'kuis') {
+                kuisWrap.classList.remove('hidden');
+                proyekWrap.classList.add('hidden');
+                btnKuis.className = 'px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-navy-900 text-white transition';
+                btnProyek.className = 'px-4 py-2 rounded-xl text-xs sm:text-sm font-bold text-slate-600 hover:bg-slate-100 transition';
+            } else {
+                kuisWrap.classList.add('hidden');
+                proyekWrap.classList.remove('hidden');
+                btnProyek.className = 'px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-navy-900 text-white transition';
+                btnKuis.className = 'px-4 py-2 rounded-xl text-xs sm:text-sm font-bold text-slate-600 hover:bg-slate-100 transition';
+            }
+        }
+
+        function saveProjectBrief() {
+            appState.projectBrief = {
+                product: document.getElementById('proj-product').value.trim(),
+                audience: document.getElementById('proj-audience').value.trim(),
+                software: document.getElementById('proj-software').value
+            };
+            saveState();
+            showToast('Catatan konsep proyek poster berhasil disimpan!', 'success');
+        }
+
+        function loadProjectBrief() {
+            if (!appState.projectBrief) return;
+            document.getElementById('proj-product').value = appState.projectBrief.product || '';
+            document.getElementById('proj-audience').value = appState.projectBrief.audience || '';
+            document.getElementById('proj-software').value = appState.projectBrief.software || '';
+        }
+
+        /* ------------------------------------------
+           8. IDENTITAS SISWA & GURU PENGAMPU
+        ------------------------------------------ */
+        function renderIdentities() {
+            const guru = appState.guru || defaultState.guru;
+            const guruNamaEl = document.getElementById('home-guru-nama');
+            const guruSekolahEl = document.getElementById('home-guru-sekolah');
+            if (guruNamaEl) guruNamaEl.textContent = guru.nama;
+            if (guruSekolahEl) guruSekolahEl.textContent = `${guru.sekolah} • Desain Komunikasi Visual`;
+
+            const student = appState.student || defaultState.student;
+            const nameInputEl = document.getElementById('home-student-name');
+            const classInputEl = document.getElementById('home-student-class');
+            if (nameInputEl) nameInputEl.value = student.nama || '';
+            if (classInputEl) classInputEl.value = student.kelas || '';
+
+            const sidebarCard = document.getElementById('sidebar-student-card');
+            const savedBadge = document.getElementById('student-saved-badge');
+            if (student.nama) {
+                if (sidebarCard) sidebarCard.classList.remove('hidden');
+                if (savedBadge) savedBadge.classList.remove('hidden');
+                const sidebarNameEl = document.getElementById('sidebar-student-name');
+                const sidebarClassEl = document.getElementById('sidebar-student-class');
+                if (sidebarNameEl) sidebarNameEl.textContent = student.nama;
+                if (sidebarClassEl) sidebarClassEl.textContent = student.kelas || 'Kelas XI DKV';
+            } else {
+                if (sidebarCard) sidebarCard.classList.add('hidden');
+                if (savedBadge) savedBadge.classList.add('hidden');
+            }
+        }
+
+        function startLearningWithStudent() {
+            const namaInputEl = document.getElementById('home-student-name');
+            const kelasInputEl = document.getElementById('home-student-class');
+            const namaInput = namaInputEl ? namaInputEl.value.trim() : '';
+            const kelasInput = kelasInputEl ? kelasInputEl.value.trim() : '';
+
+            if (!namaInput) {
+                showToast('Silakan masukkan nama lengkap siswa terlebih dahulu sebelum mulai belajar!', 'error');
+                if (namaInputEl) namaInputEl.focus();
+                return;
+            }
+
+            appState.student = {
+                nama: namaInput,
+                kelas: kelasInput || 'XI DKV'
+            };
+            saveState();
+            renderIdentities();
+            showToast(`Selamat belajar, ${namaInput}!`, 'success');
+            navigateTo('tujuan');
+        }
+
+        function openStudentModal() {
+            navigateTo('home');
+            setTimeout(() => {
+                document.getElementById('home-student-name').focus();
+            }, 250);
+        }
+
+        /* ------------------------------------------
+           INITIALIZE APPLICATION ON LOAD
+        ------------------------------------------ */
+        window.addEventListener('DOMContentLoaded', () => {
+            initBab3Zoom();
+            initSimZoom();
+            renderTebak();
+            initDragDropGame();
+            renderCaseStudies();
+            renderLatihan();
+            renderEvalQuestion();
+            loadProjectBrief();
+            renderIdentities();
+            updateProgressUI();
+        });
+    </script>
+</body>
+</html>
